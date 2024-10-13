@@ -1,0 +1,842 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- 
+
+
+###########buscarPorLoginClave###################################
+
+create or replace function buscarporloginclave( 
+	in usua character varying, 
+	in clav character varying, 
+	out lista refcursor, 
+	out aviso character varying, 
+	out error character varying
+) 
+language plpgsql as $$ begin
+
+open lista for select * from t_usuario where login=usua and password=clav;
+
+end;$$
+
+#################################################################
+
+###########llenarPais###########################################
+
+create or replace function llenarPais( 
+	in usua character varying,  
+	out lista refcursor, 
+	out aviso character varying, 
+	out error character varying
+) 
+language plpgsql as $$ begin
+
+open lista for select * from t_pais order by nombre;
+
+end;$$
+#################################################################
+
+
+###########llenarPlanes###########################################
+
+create or replace function llenarPlanes( 
+	in usua character varying,  
+	out lista refcursor, 
+	out aviso character varying, 
+	out error character varying
+) 
+language plpgsql as $$ begin
+
+open lista for select * from t_plan order by nombre_plan;
+
+end;$$
+
+#################################################################
+
+###########llenarDestinoGroup####################################
+
+create or replace function llenarDestinoGroup( 
+	in usua character varying,  
+	out lista refcursor, 
+	out aviso character varying, 
+	out error character varying
+) 
+language plpgsql as $$ begin
+
+open lista for select * from t_destino order by id_destino asc;
+
+end;$$
+
+#################################################################
+
+
+###########llenarMultiviaje######################################
+
+create or replace function llenarMultiviaje( 
+	in usua character varying,  
+	out lista refcursor, 
+	out aviso character varying, 
+	out error character varying
+) 
+language plpgsql as $$ begin
+
+open lista for select * from t_multiviaje order by id_multiviaje;
+
+end;$$
+#################################################################
+
+###########llenarPaisOrigen######################################
+
+create or replace function llenarPaisOrigen( 
+	in usua character varying,  
+	out lista refcursor, 
+	out aviso character varying, 
+	out error character varying
+) 
+language plpgsql as $$ begin
+
+open lista for select id_pais, nombre from (
+select p.* from t_pais p inner join t_tipo_cambio tc on tc.id_pais=p.id_pais  
+union all 
+select * from t_pais where id_pais not in (select pa.id_pais from t_pais pa inner join t_tipo_cambio tca on tca.id_pais=pa.id_pais)
+) t;
+
+end;$$
+
+#################################################################
+
+
+###########llenarCobertura######################################
+
+create or replace function llenarCobertura( 
+	in usua character varying,  
+	out lista refcursor, 
+	out aviso character varying, 
+	out error character varying
+) 
+language plpgsql as $$ begin
+
+open lista for select * from t_cobertura order by id_cobertura;
+
+end;$$
+
+#################################################################
+
+
+###########llenarCondicionado####################################
+
+create or replace function llenarCondicionado( 
+	in usua character varying,  
+	out lista refcursor, 
+	out aviso character varying, 
+	out error character varying
+) 
+language plpgsql as $$ begin
+
+open lista for select * from t_condicionado order by id_condicionado;
+
+end;$$
+
+#################################################################
+
+###########findContinenteByPlan####################################
+
+create or replace function findContinenteByPlan( 
+	in usua character varying,  
+	in id_plan integer,
+	out lista refcursor, 
+	out aviso character varying, 
+	out error character varying
+) 
+language plpgsql as $$ begin
+
+open lista for select p.continente as group_continente 
+		from t_pais p inner join t_plan_paises pp on p.id_pais = pp.id_pais 
+		where pp.id_plan = id_plan 
+		group by p.continente;
+
+end;$$
+
+#################################################################
+
+
+###########findPaisesByPlan######################################
+
+create or replace function findPaisesByPlan( 
+	in usua character varying,  
+	in id_plan integer,
+	out lista refcursor, 
+	out aviso character varying, 
+	out error character varying
+) 
+language plpgsql as $$ begin
+
+open lista for select p.* from t_pais p inner join t_plan_paises pp on p.id_pais = pp.id_pais 
+		where pp.id_plan = id_plan;
+
+end;$$
+
+###############################################################
+
+#######################listausuarios###########################
+create or replace function listausuarios( 
+	out aviso character varying, 
+	out error character varying,
+	out lista refcursor, 
+	in idusuario integer,
+	in numeroip character varying
+	
+) 
+language plpgsql as $$ begin
+
+open lista for SELECT a.idusuario,a.dni, a.nombre, a.apellido_paterno, a.apellido_materno, a.email, a.direccion, a.fecha_registro, a.login,a.login,a.password, a.codigo_banco as codigoBanco, 
+		a.codigo_banco_supervisor as codigoBancoSupervisor,
+		a.fecha_acceso, a.estado, a.es_nuevo,a.id_negocio,a.departamento, 
+		a.provincia,a.distrito,a.fecha_ingreso,a.id_oficina,a.sid_ubigeo,a.id_supervisor,a.id_coordinador,a.estado_planilla, a.fecha_cese,
+		a.motivo_cese, a.funcion, a.rpm, a.rpc, a.telefono, a.id_agencia,
+		(select x.nit||' '||x.razon_social from t_agencia x where x.id_agencia=a.id_agencia) as desc_agencia
+		FROM t_usuario a
+		order by a.apellido_paterno, a.apellido_materno, a.nombre;
+
+end;$$
+###############################################################
+
+
+#######################listaagencias###########################
+
+create or replace function listaagencias( 
+	out aviso character varying, 
+	out error character varying,
+	out lista refcursor, 
+	in idusuario integer,
+	in numeroip character varying
+	
+) 
+language plpgsql as $$ begin
+
+open lista for select a.*, (select max(b.nombre) from t_pais b where b.id_pais=a.id_pais) as des_pais, (select max(c.nombre) from t_ciudad c where c.id_ciudad=a.id_ciudad) as des_ciudad from t_agencia a;
+
+end;$$
+###############################################################
+  create or replace function inicdataagen( 
+	out aviso character varying, 
+	out error character varying,
+	out lista refcursor, 
+	in idusuario integer,
+	in numeroip character varying
+	
+) 
+language plpgsql as $$ begin
+
+open lista for select * from t_pais order by nombre asc;
+end;$$
+###############################################################
+create or replace function listciudxpais( 
+	out aviso character varying, 
+	out error character varying,
+	out lista refcursor, 
+	in idusuario integer,
+	in numeroip character varying,
+	in pais integer
+	
+) 
+language plpgsql as $$ begin
+
+open lista for select * from t_ciudad a where a.id_pais=pais;
+end;$$
+##################################################################
+CREATE OR REPLACE FUNCTION get_id_agencia()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.id_agencia = NEXTVAL('public.sec_agencia');
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+##################################################################
+
+CREATE TRIGGER tgbi01_t_agencia
+  BEFORE INSERT
+  ON public.t_agencia
+  FOR EACH ROW
+  EXECUTE PROCEDURE public.get_id_agencia();
+
+#################################################################
+
+create or replace function registrar_agencia( 
+	out aviso character varying, 
+	out error character varying,
+	out idagencia integer, 
+	in idusuario integer,
+	in numeroip character varying,
+	in p_id_pais integer, 
+	in p_id_ciudad integer, 
+	in p_razon_social character varying, 
+	in p_nit character varying, 
+	in p_direccion character varying, 
+	in p_telefono character varying, 
+	in p_rnt character varying, 
+	in p_email character varying, 
+	in p_persona_referencia character varying, 
+	in p_estado character varying, 
+	in p_codigo_descuento character varying, 
+	in p_porcentaje_descuenta double precision	
+) 
+language plpgsql as $$ begin
+
+
+if p_id_pais is null then error:='ERROR. Debe ingresar el pais';return;end if;
+
+if p_id_ciudad is null then error:='ERROR. Debe ingresar la ciudad';return;end if;
+
+if p_razon_social is null then error:='ERROR. Debe ingresar la Razon Social';return;end if;
+
+if p_nit is null then error:='ERROR. Debe ingresar el NIT';return;end if;
+
+if p_direccion is null then error:='ERROR. Debe ingresar la direccion';return;end if;
+
+if p_telefono is null then error:='ERROR. Debe ingresar el telefono';return;end if;
+
+if p_rnt is null then error:='ERROR. Debe ingresar el RNT';return;end if;
+
+if p_email is null then error:='ERROR. Debe ingresar el E-MAIL';return;end if;
+
+if p_persona_referencia is null then error:='ERROR. Debe ingresar la persona de contacto';return;end if;
+
+if p_estado is null then error:='ERROR. Debe ingresar el estado';return;end if;
+
+if p_codigo_descuento is null then error:='ERROR. Debe ingresar el codigo de descuento';return;end if;
+
+if p_porcentaje_descuenta is null then error:='ERROR. Debe ingresar el porcetaje de descueto';return;end if;
+
+
+
+insert into public.t_agencia (
+		       id_pais,id_ciudad,razon_social,nit,direccion,telefono,rnt,email,persona_referencia,estado,codigo_descuento,porcentaje_descuento
+		       ) values(
+		       p_id_pais,p_id_ciudad,p_razon_social,p_nit,p_direccion,p_telefono,p_rnt,p_email,p_persona_referencia,p_estado,p_codigo_descuento,p_porcentaje_descuenta
+		       ) returning id_agencia into idagencia;
+
+
+aviso:='Se registro correctamente la agencia';
+
+EXCEPTION
+       
+        WHEN OTHERS THEN
+            RAISE EXCEPTION 'ERROR. : %', SQLERRM;	       
+
+end;$$
+##########################################################################
+
+create or replace function actualizar_agencia( 
+	out aviso character varying, 
+	out error character varying,
+	in idusuario integer,
+	in numeroip character varying,
+	in p_id_pais integer, 
+	in p_id_ciudad integer, 
+	in p_razon_social character varying, 
+	in p_nit character varying, 
+	in p_direccion character varying, 
+	in p_telefono character varying, 
+	in p_rnt character varying, 
+	in p_email character varying, 
+	in p_persona_referencia character varying, 
+	in p_estado character varying, 
+	in p_codigo_descuento character varying, 
+	in p_porcentaje_descuenta double precision,
+	in p_id_agencia integer	
+) 
+language plpgsql as $$ begin
+
+
+if p_id_pais is null then error:='ERROR. Debe ingresar el pais';return;end if;
+
+if p_id_ciudad is null then error:='ERROR. Debe ingresar la ciudad';return;end if;
+
+if p_razon_social is null then error:='ERROR. Debe ingresar la Razon Social';return;end if;
+
+if p_nit is null then error:='ERROR. Debe ingresar el NIT';return;end if;
+
+if p_direccion is null then error:='ERROR. Debe ingresar la direccion';return;end if;
+
+if p_telefono is null then error:='ERROR. Debe ingresar el telefono';return;end if;
+
+if p_rnt is null then error:='ERROR. Debe ingresar el RNT';return;end if;
+
+if p_email is null then error:='ERROR. Debe ingresar el E-MAIL';return;end if;
+
+if p_persona_referencia is null then error:='ERROR. Debe ingresar la persona de contacto';return;end if;
+
+if p_estado is null then error:='ERROR. Debe ingresar el estado';return;end if;
+
+if p_codigo_descuento is null then error:='ERROR. Debe ingresar el codigo de descuento';return;end if;
+
+if p_porcentaje_descuenta is null then error:='ERROR. Debe ingresar el porcetaje de descueto';return;end if;
+
+
+ update t_agencia  set 
+	 id_pais=	p_id_pais, 
+	 id_ciudad=	p_id_ciudad, 
+	 razon_social=	p_razon_social, 
+	 nit=		p_nit, 
+	 direccion=	p_direccion, 
+	 telefono=	p_telefono, 
+	 rnt=		p_rnt,
+	 email=		p_email, 
+	 persona_referencia=	p_persona_referencia,
+	 codigo_descuento=	p_codigo_descuento, 
+	 porcentaje_descuento=	p_porcentaje_descuenta 
+	 where id_agencia=p_id_agencia;
+
+
+aviso:='Se actualizo correctamente la agencia';
+EXCEPTION
+        WHEN OTHERS THEN
+            RAISE EXCEPTION 'ERROR. actualizar_agencia: %', SQLERRM;	       
+end;$$
+
+##########################################################################
+
+CREATE OR REPLACE FUNCTION crud_agencia( 
+    OUT aviso character varying, 
+    OUT error character varying,
+    OUT idagencia integer, 
+    IN idusuario integer,
+    IN numeroip character varying,
+    IN p_id_pais integer, 
+    IN p_id_ciudad integer, 
+    IN p_razon_social character varying, 
+    IN p_nit character varying, 
+    IN p_direccion character varying, 
+    IN p_telefono character varying, 
+    IN p_rnt character varying, 
+    IN p_email character varying, 
+    IN p_persona_referencia character varying, 
+    IN p_estado character varying, 
+    IN p_codigo_descuento character varying, 
+    IN p_porcentaje_descuenta double precision,
+    IN p_id_agencia integer,
+    IN p_tipo character varying    
+) 
+LANGUAGE plpgsql AS $$
+BEGIN
+    IF p_tipo='I' THEN
+        select * into aviso, error, idagencia from  registrar_agencia( 
+            idusuario,
+            numeroip,
+            p_id_pais, 
+            p_id_ciudad, 
+            p_razon_social, 
+            p_nit, 
+            p_direccion, 
+            p_telefono, 
+            p_rnt, 
+            p_email, 
+            p_persona_referencia, 
+            p_estado,
+            p_codigo_descuento, 
+            p_porcentaje_descuenta
+        );
+    ELSIF p_tipo='D' THEN
+        delete from t_agencia a where a.id_agencia=p_id_agencia;
+    ELSIF p_tipo='U' THEN
+
+        select * into aviso, error from actualizar_agencia(
+            idusuario,
+            numeroip,
+            p_id_pais, 
+            p_id_ciudad, 
+            p_razon_social, 
+            p_nit, 
+            p_direccion, 
+            p_telefono, 
+            p_rnt, 
+            p_email, 
+            p_persona_referencia, 
+            p_estado,
+            p_codigo_descuento, 
+            p_porcentaje_descuenta,
+            p_id_agencia
+        );
+    END IF;
+    
+    EXCEPTION
+    WHEN OTHERS THEN
+        RAISE EXCEPTION 'ERROR. :%', SQLERRM;
+END;
+$$;
+
+##########################################################################
+
+##########################################################################
+CREATE OR REPLACE FUNCTION get_id_usuario()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.idusuario = NEXTVAL('public.sec_usuario');
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+##########################################################################
+CREATE TRIGGER tgbi01_t_usuario
+  BEFORE INSERT
+  ON public.t_usuario
+  FOR EACH ROW
+  EXECUTE PROCEDURE public.get_id_usuario();
+##########################################################################
+create or replace function registrar_usuario( 
+    out aviso character varying, 
+    out error character varying,
+    out id_usuario integer, 
+    in p_idusuarioregi integer,
+    in p_numeroip character varying, 
+    in p_dni character varying, 
+    in p_nombre character varying,  
+    in p_apellido_paterno character varying, 
+    in p_apellido_materno character varying, 
+    in p_email character varying, 
+    in p_direccion character varying, 
+    in p_telefono character varying,  
+    in p_login character varying, 
+    in p_password character varying, 
+    in p_id_agencia integer
+) 
+language plpgsql as $$ begin
+
+
+if p_dni is null then error:='ERROR. Debe ingresar el DNI';return;end if;
+
+if p_nombre is null then error:='ERROR. Debe ingresar el nombre';return;end if;
+
+if p_apellido_paterno is null then error:='ERROR. Debe ingresar el apellido paterno';return;end if;
+
+if p_apellido_materno is null then error:='ERROR. Debe ingresar el apellido materno';return;end if;
+
+if p_email is null then error:='ERROR. Debe ingresar el correo';return;end if;
+
+if p_direccion is null then error:='ERROR. Debe ingresar la direccion';return;end if;
+
+if p_telefono is null then error:='ERROR. Debe ingresar el telefono';return;end if;
+
+if p_login is null then error:='ERROR. Debe ingresar el login';return;end if;
+
+if p_password is null then error:='ERROR. Debe ingresar el password';return;end if;
+
+
+insert into public.t_usuario (
+nombre,
+login,
+password,
+apellido_paterno,
+apellido_materno,
+dni,
+email,
+direccion,
+telefono,
+id_agencia
+) values(
+p_nombre,
+p_login,
+p_password,
+p_apellido_paterno,
+p_apellido_materno,
+p_dni,
+p_email,
+p_direccion,
+p_telefono,
+p_id_agencia) returning idusuario into id_usuario;
+
+
+aviso:='Se registro correctamente el usuario';
+
+EXCEPTION
+       
+        WHEN OTHERS THEN
+            RAISE EXCEPTION 'ERROR. : %', SQLERRM;	       
+
+end;$$
+##########################################################################
+create or replace function actualizar_usuario( 
+    out aviso character varying, 
+    out error character varying,
+    in p_idusuarioregi integer,
+    in p_numeroip character varying, 
+    in p_dni character varying, 
+    in p_nombre character varying,  
+    in p_apellido_paterno character varying, 
+    in p_apellido_materno character varying, 
+    in p_email character varying, 
+    in p_direccion character varying, 
+    in p_telefono character varying,  
+    in p_login character varying, 
+    in p_password character varying, 
+    in p_id_agencia integer,
+    in p_idusuario integer
+) 
+language plpgsql as $$ begin
+
+
+if p_dni is null then error:='ERROR. Debe ingresar el DNI';return;end if;
+
+if p_nombre is null then error:='ERROR. Debe ingresar el nombre';return;end if;
+
+if p_apellido_paterno is null then error:='ERROR. Debe ingresar el apellido paterno';return;end if;
+
+if p_apellido_materno is null then error:='ERROR. Debe ingresar el apellido materno';return;end if;
+
+if p_email is null then error:='ERROR. Debe ingresar el correo';return;end if;
+
+if p_direccion is null then error:='ERROR. Debe ingresar la direccion';return;end if;
+
+if p_telefono is null then error:='ERROR. Debe ingresar el telefono';return;end if;
+
+if p_login is null then error:='ERROR. Debe ingresar el login';return;end if;
+
+if p_password is null then error:='ERROR. Debe ingresar el password';return;end if;
+
+
+update t_usuario set nombre=p_nombre, login=p_login, password=p_password,
+		 apellido_paterno=p_apellido_paterno, apellido_materno=p_apellido_materno,
+		 dni =p_dni, email=p_email,direccion=p_direccion,telefono=p_telefono,
+		 id_agencia=p_id_agencia
+where idusuario=p_idusuario;
+
+
+aviso:='Se actualizo correctamente el usuario';
+
+EXCEPTION
+       
+        WHEN OTHERS THEN
+            RAISE EXCEPTION 'ERROR. : %', SQLERRM;	       
+
+end;$$
+##########################################################################
+CREATE OR REPLACE FUNCTION crud_usuario( 
+    OUT aviso character varying, 
+    OUT error character varying,
+    OUT id_usuario integer, 
+	OUT codigo_generado character varying,
+    IN p_idusuarioregi integer,
+    IN p_numeroip character varying,
+    IN p_tipo character varying,    
+    IN p_dni character varying, 
+    IN p_nombre character varying, 
+    IN p_apellido_paterno character varying, 
+    IN p_apellido_materno character varying, 
+    IN p_email character varying, 
+    IN p_direccion character varying, 
+    IN p_telefono character varying, 
+    IN p_login character varying, 
+    IN p_password character varying, 
+    IN p_id_agencia integer,
+    IN p_idusuario integer
+    
+) 
+LANGUAGE plpgsql AS $$
+
+begin
+		copia_oculto:='juanktarv@gmail.com'; 
+		copia_normal:='';
+		usuario_correo:='starassist.notify@gmail.com';
+		password_correo:='ukqd zpvi gsfx dhtg';
+		asunto:='Acceso al Sistema StarAssist';
+		saludo_inicio:='Bienvenido.';
+		presentacion:='Hola, ';
+		cuerpo_mensaje:='_USUARIO_ de la agencia _AGENCIA_, su registro fue realizado satisfactoriamente.Puede Utilizar el siguiente código de descuento: _CODIGO_';
+		saludo_despedida:='Mensaje automático, por favor no responder.' ;
+		firma_correo:='Atentamente, StarAssist';
+		correo_contacto:='';
+end;
+	
+BEGIN
+    IF p_tipo='I' THEN
+        select * into aviso, error, id_usuario from  registrar_usuario( 
+            p_idusuarioregi,
+            p_numeroip,
+            p_dni, 
+            p_nombre, 
+            p_apellido_paterno, 
+            p_apellido_materno, 
+            p_email, 
+            p_direccion, 
+            p_telefono, 
+            p_login, 
+            p_password, 
+            p_id_agencia
+        );
+		
+		BEGIN
+			 LOOP
+				
+				codigo_generado := substr(md5(random()::text), 1, 5);
+
+				
+				IF NOT EXISTS (SELECT 1 FROM t_codigodescuento WHERE codigo = codigo_generado) THEN
+					
+					INSERT INTO t_codigodescuento (tipo,codigo, id_usuario) VALUES (1, codigo_generado, id_usuario);
+					
+					EXIT; 
+				END IF;
+			END LOOP ;
+		END;
+
+    ELSIF p_tipo='D' THEN
+        delete from t_usuario a where a.idusuario=p_idusuario;
+    ELSIF p_tipo='U' THEN
+
+        select * into aviso, error from actualizar_usuario(
+            p_idusuarioregi,
+            p_numeroip,
+            p_dni, 
+            p_nombre, 
+            p_apellido_paterno, 
+            p_apellido_materno, 
+            p_email, 
+            p_direccion, 
+            p_telefono, 
+            p_login, 
+            p_password, 
+            p_id_agencia,
+            p_idusuario
+        );
+    END IF;
+    
+    EXCEPTION
+    WHEN OTHERS THEN
+        RAISE EXCEPTION 'ERROR. :%', SQLERRM;
+END;
+$$;
+##########################################################################
+
+CREATE OR REPLACE FUNCTION habilitar_agencia( 
+    OUT aviso character varying, 
+    OUT error character varying,
+    OUT idagencia integer, 
+    IN idusuario integer,
+    IN numeroip character varying,
+    IN p_id_pais integer, 
+    IN p_id_ciudad integer, 
+    IN p_razon_social character varying, 
+    IN p_nit character varying, 
+    IN p_direccion character varying, 
+    IN p_telefono character varying, 
+    IN p_rnt character varying, 
+    IN p_email character varying, 
+    IN p_persona_referencia character varying, 
+    IN p_estado character varying, 
+    IN p_codigo_descuento character varying, 
+    IN p_porcentaje_descuenta double precision,
+    IN p_id_agencia integer,
+    IN p_tipo character varying    
+) 
+LANGUAGE plpgsql AS $$
+BEGIN
+    IF p_tipo='D' THEN
+       update t_agencia a set habilitado=0, idusuario_hailitado=idusuario, fecha_habilitado=now()  where a.id_agencia=p_id_agencia;
+    ELSIF p_tipo='H' THEN
+       update t_agencia a set habilitado=1, idusuario_hailitado=idusuario, fecha_habilitado=now() where a.id_agencia=p_id_agencia;
+    END IF;
+    
+    EXCEPTION
+    WHEN OTHERS THEN
+        RAISE EXCEPTION 'ERROR. :%', SQLERRM;
+END;
+$$;
+
+##########################################################################
+CREATE OR REPLACE FUNCTION public.habilitar_usuario(
+	OUT aviso character varying,
+	OUT error character varying,
+	OUT id_usuario integer,
+	OUT codigo_generado character varying,
+	p_idusuarioregi integer,
+	p_numeroip character varying,
+	p_tipo character varying,
+	p_dni character varying,
+	p_nombre character varying,
+	p_apellido_paterno character varying,
+	p_apellido_materno character varying,
+	p_email character varying,
+	p_direccion character varying,
+	p_telefono character varying,
+	p_login character varying,
+	p_password character varying,
+	p_id_agencia integer,
+	p_idusuario integer,
+	OUT copia_oculto character varying,
+	OUT copia_normal character varying,
+	OUT usuario_correo character varying,
+	OUT password_correo character varying,
+	OUT asunto character varying,
+	OUT saludo_inicio character varying,
+	OUT presentacion character varying,
+	OUT cuerpo_mensaje character varying,
+	OUT saludo_despedida character varying,
+	OUT firma_correo character varying,
+	OUT correo_contacto character varying)
+    RETURNS record
+    LANGUAGE 'plpgsql'
+    COST 100
+    VOLATILE PARALLEL UNSAFE
+AS $BODY$
+BEGIN
+
+	IF p_tipo='D' THEN
+       update t_usuario a set habilitado=0, idusuario_habilitado=p_idusuarioregi, fecha_habilitado=now()  where a.idusuario=p_idusuario;
+    ELSIF p_tipo='H' THEN
+       update t_usuario a set habilitado=1, idusuario_habilitado=p_idusuarioregi, fecha_habilitado=now() where a.idusuario=p_idusuario;
+    END IF;
+
+    EXCEPTION
+    WHEN OTHERS THEN
+        RAISE EXCEPTION 'ERROR. :%', SQLERRM;
+END;
+$BODY$;
+
+ALTER FUNCTION public.habilitar_usuario(integer, character varying, character varying, character varying, character varying, character varying, character varying, character varying, character varying, character varying, character varying, character varying, integer, integer)
+    OWNER TO doadmin;
+
+##########################################################################
+
+CREATE OR REPLACE FUNCTION public.habilitar_agencia(
+	OUT aviso character varying,
+	OUT error character varying,
+	OUT idagencia integer,
+	idusuario integer,
+	numeroip character varying,
+	p_id_pais integer,
+	p_id_ciudad integer,
+	p_razon_social character varying,
+	p_nit character varying,
+	p_direccion character varying,
+	p_telefono character varying,
+	p_rnt character varying,
+	p_email character varying,
+	p_persona_referencia character varying,
+	p_estado character varying,
+	p_codigo_descuento character varying,
+	p_porcentaje_descuenta double precision,
+	p_id_agencia integer,
+	p_tipo character varying)
+    RETURNS record
+    LANGUAGE 'plpgsql'
+    COST 100
+    VOLATILE PARALLEL UNSAFE
+AS $BODY$
+BEGIN
+    IF p_tipo='D' THEN
+       update t_agencia a set habilitado=0, idusuario_habilitado=idusuario, fecha_habilitado=now()  where a.id_agencia=p_id_agencia;
+    ELSIF p_tipo='H' THEN
+       update t_agencia a set habilitado=1, idusuario_habilitado=idusuario, fecha_habilitado=now() where a.id_agencia=p_id_agencia;
+    END IF;
+    
+    EXCEPTION
+    WHEN OTHERS THEN
+        RAISE EXCEPTION 'ERROR. :%', SQLERRM;
+END;
+$BODY$;
+
+ALTER FUNCTION public.habilitar_agencia(integer, character varying, integer, integer, character varying, character varying, character varying, character varying, character varying, character varying, character varying, character varying, character varying, double precision, integer, character varying)
+    OWNER TO doadmin;
+
+##########################################################################
+ -->
