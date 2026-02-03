@@ -1,6 +1,6 @@
 package com.quentin.starassistws.objetos;
 
-public class CotizarRequest {
+public class CotizarRequest{
 
 	private Integer tcodiusua;
 	private Integer tcantviaj;
@@ -8,10 +8,14 @@ public class CotizarRequest {
 	private Integer tcantdias;
 	private String  tcorrviaj;
 	private Integer tiddestin;
+	private Integer ttipodest;
 	private Integer tidorigen;
 	private Integer thabimult;
 	
-	private String tlistpasa;
+	private String[] tlistpasa;
+	
+	private String fechainicio;
+	private String fechafinal;
 	
 	public Integer getTcodiusua() {
 		return tcodiusua;
@@ -61,10 +65,29 @@ public class CotizarRequest {
 	public void setThabimult(Integer thabimult) {
 		this.thabimult = thabimult;
 	}
-	public String getTlistpasa() {
+	
+	public String getFechainicio() {
+		return fechainicio;
+	}
+	public void setFechainicio(String fechainicio) {
+		this.fechainicio = fechainicio;
+	}
+	public String getFechafinal() {
+		return fechafinal;
+	}
+	public void setFechafinal(String fechafinal) {
+		this.fechafinal = fechafinal;
+	}
+	public Integer getTtipodest() {
+		return ttipodest;
+	}
+	public void setTtipodest(Integer ttipodest) {
+		this.ttipodest = ttipodest;
+	}
+	public String[] getTlistpasa() {
 		return tlistpasa;
 	}
-	public void setTlistpasa(String tlistpasa) {
+	public void setTlistpasa(String[] tlistpasa) {
 		this.tlistpasa = tlistpasa;
 	}
 	

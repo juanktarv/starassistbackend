@@ -61,6 +61,12 @@ import org.springframework.web.multipart.commons.CommonsMultipartFile;
 import org.xml.sax.SAXException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.quentin.starassistws.restagencia.ListaAgenciaRequest;
+import com.quentin.starassistws.restagencia.ListaAgenciaResponse;
+import com.quentin.starassistws.restcombo.PaisDestinoRequest;
+import com.quentin.starassistws.restcombo.PaisDestinoResponse;
+import com.quentin.starassistws.restcombo.PaisOrigenRequest;
+import com.quentin.starassistws.restcombo.PaisOrigenResponse;
 import com.quentin.starassistws.servicio.ModuloService;
 import com.quentin.starassistws.util.Utilitarios;
 
@@ -84,12 +90,18 @@ public class CombosController {
         return remoteAddr;
     }
     
+    @RequestMapping(value = "listaPaisOrigen",method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+	public @ResponseBody PaisOrigenResponse listaPaisOrigen(@RequestBody PaisOrigenRequest request, HttpServletRequest servletRequest){
+	  	String ipAddress=Utilitarios.getClientIp(servletRequest); 	
+	  	request.setNumeroip(ipAddress);
+	  	return moduloService.listaPaisOrigen(request); 
+	}
     
-   /*
-    @RequestMapping(value = "autenticarUsuario",method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
-    public @ResponseBody AutenticarResponse autenticarUsuario(@RequestBody AutenticarRequest request, HttpServletRequest servletRequest){
-    	String ipAddress=getClientIp(servletRequest); 	
-    	return moduloService.autenticarUsuario(request);
-    }
-    */
+    @RequestMapping(value = "listaPaisDestino",method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+	public @ResponseBody PaisDestinoResponse listaPaisDestino(@RequestBody PaisDestinoRequest request, HttpServletRequest servletRequest){
+	  	String ipAddress=Utilitarios.getClientIp(servletRequest); 	
+	  	request.setNumeroip(ipAddress);
+	  	return moduloService.listaPaisDestino(request); 
+	}
+   
 }

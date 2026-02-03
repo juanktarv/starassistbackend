@@ -839,4 +839,51 @@ ALTER FUNCTION public.habilitar_agencia(integer, character varying, integer, int
     OWNER TO doadmin;
 
 ##########################################################################
+
+create or replace function cmb_llenarPaisOrigen( 
+	out aviso character varying, 
+	out error character varying,
+	out lista refcursor, 
+	in idusuario integer,  
+	in numeroip character varying,
+	in id_pais_destino integer
+) 
+language plpgsql as $$ begin
+
+open lista for select t.id_pais, t.nombre 
+from (
+	select p.* from t_pais p inner join t_tipo_cambio tc on tc.id_pais=p.id_pais  
+	union all 
+	select * from t_pais 
+	where 
+		id_pais not in (select pa.id_pais from t_pais pa inner join t_tipo_cambio tca on tca.id_pais=pa.id_pais)
+	) t 
+	where 
+	t.id_pais!=id_pais_destino order by t.nombre asc;
+
+end;$$
+##########################################################################
+
+create or replace function cmb_llenarPaisDestino( 
+	out aviso character varying, 
+	out error character varying,
+	out listazona refcursor, 
+	out listapais refcursor, 
+	in idusuario integer,  
+	in numeroip character varying,
+	in id_pais_origen integer
+) 
+language plpgsql as $$ begin
+
+open listazona for select * from t_destino order by nombre_destino asc;
+open listapais for select * from t_pais p where p.id_pais != id_pais_origen order by nombre asc;
+
+end;$$
+
+#############################################################################################
+
+
+
+
+
  -->

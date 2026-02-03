@@ -14,6 +14,10 @@ import com.quentin.starassistws.restagencia.ListaAgenciaRequest;
 import com.quentin.starassistws.restagencia.ListaAgenciaResponse;
 import com.quentin.starassistws.restagencia.ListaCiudadPaisRequest;
 import com.quentin.starassistws.restagencia.ListaCiudadPaisResponse;
+import com.quentin.starassistws.restcombo.PaisDestinoRequest;
+import com.quentin.starassistws.restcombo.PaisDestinoResponse;
+import com.quentin.starassistws.restcombo.PaisOrigenRequest;
+import com.quentin.starassistws.restcombo.PaisOrigenResponse;
 import com.quentin.starassistws.restusuario.CrudUsuarioRequest;
 import com.quentin.starassistws.restusuario.CrudUsuarioResponse;
 import com.quentin.starassistws.restusuario.ListaUsuarioRequest;
@@ -37,4 +41,7 @@ public interface ModuloService {
 	ListaCiudadPaisResponse listarCiudadXPais(ListaCiudadPaisRequest request);
 	CrudAgenciaResponse crudAgencia(CrudAgenciaRequest request);
 	CrudAgenciaResponse habilitarAgencia(CrudAgenciaRequest request);
+	//COMBOS
+	PaisOrigenResponse listaPaisOrigen(PaisOrigenRequest request);
+	PaisDestinoResponse listaPaisDestino(PaisDestinoRequest request);
 }

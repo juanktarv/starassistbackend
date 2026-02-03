@@ -16,6 +16,10 @@ import com.quentin.starassistws.restagencia.ListaAgenciaRequest;
 import com.quentin.starassistws.restagencia.ListaAgenciaResponse;
 import com.quentin.starassistws.restagencia.ListaCiudadPaisRequest;
 import com.quentin.starassistws.restagencia.ListaCiudadPaisResponse;
+import com.quentin.starassistws.restcombo.PaisDestinoRequest;
+import com.quentin.starassistws.restcombo.PaisDestinoResponse;
+import com.quentin.starassistws.restcombo.PaisOrigenRequest;
+import com.quentin.starassistws.restcombo.PaisOrigenResponse;
 import com.quentin.starassistws.restusuario.CrudUsuarioRequest;
 import com.quentin.starassistws.restusuario.CrudUsuarioResponse;
 import com.quentin.starassistws.restusuario.ListaUsuarioRequest;
@@ -89,6 +93,18 @@ public class ModuloServiceImpl implements ModuloService{
 	public CrudUsuarioResponse habilitarUsuario(CrudUsuarioRequest request) {
 		// TODO Auto-generated method stub
 		return moduloDAO.habilitarUsuario(request);
+	}
+
+	@Override
+	public PaisOrigenResponse listaPaisOrigen(PaisOrigenRequest request) {
+		// TODO Auto-generated method stub
+		return moduloDAO.listaPaisOrigen(request);
+	}
+
+	@Override
+	public PaisDestinoResponse listaPaisDestino(PaisDestinoRequest request) {
+		// TODO Auto-generated method stub
+		return moduloDAO.listaPaisDestino(request);
 	}
 	
 

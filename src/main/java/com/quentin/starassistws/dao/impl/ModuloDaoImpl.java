@@ -31,6 +31,9 @@ import com.quentin.starassistws.dao.ModuloDAO;
 import com.quentin.starassistws.dao.SimpleJdbcDao;
 import com.quentin.starassistws.objetos.CotizarRequest;
 import com.quentin.starassistws.objetos.CotizarResponse;
+import com.quentin.starassistws.objetos.Destino;
+import com.quentin.starassistws.objetos.PaisDestino;
+import com.quentin.starassistws.objetos.PaisOrigen;
 import com.quentin.starassistws.objetos.ParametroCorreo;
 import com.quentin.starassistws.objetos.PasajeroError;
 import com.quentin.starassistws.objetos.PrecioPlanCotizado;
@@ -43,6 +46,10 @@ import com.quentin.starassistws.restagencia.ListaAgenciaRequest;
 import com.quentin.starassistws.restagencia.ListaAgenciaResponse;
 import com.quentin.starassistws.restagencia.ListaCiudadPaisRequest;
 import com.quentin.starassistws.restagencia.ListaCiudadPaisResponse;
+import com.quentin.starassistws.restcombo.PaisDestinoRequest;
+import com.quentin.starassistws.restcombo.PaisDestinoResponse;
+import com.quentin.starassistws.restcombo.PaisOrigenRequest;
+import com.quentin.starassistws.restcombo.PaisOrigenResponse;
 import com.quentin.starassistws.restusuario.CrudUsuarioRequest;
 import com.quentin.starassistws.restusuario.CrudUsuarioResponse;
 import com.quentin.starassistws.restusuario.ListaUsuarioRequest;
@@ -203,112 +210,112 @@ public class ModuloDaoImpl extends SimpleJdbcDao implements ModuloDAO{
 		return rpta;
 	}
 	
-	@Override
-	public CotizarResponse cotizar(CotizarRequest request) {
-		CotizarResponse rpta= new CotizarResponse();
-		Connection cn= null;	
-		CallableStatement cs = null;
-		
-		List<PasajeroError> listaErrorEdad=new ArrayList<>();
-		List<PrecioPlanCotizado> lista=new ArrayList<>();
-		try {
-			cn=jdbcTemplate.getDataSource().getConnection();
-			cn.setAutoCommit(false);
-			
-			// Crear tabla temporal
-			Statement stmt = cn.createStatement();
-			stmt.execute("CREATE TEMPORARY TABLE t_polizapasatemp (tedadpasa INTEGER, tsecupasa INTEGER)");
-
-			stmt.execute("CREATE TEMPORARY TABLE t_precioplantemp (id_precio INTEGER, id_plan INTEGER, monto NUMERIC)");
-			
-			Statement statement = cn.createStatement();			
-			String []listaPasajero=request.getTlistpasa().split(",");
-			for(int i=0; i<listaPasajero.length; i++) {
-				int edad=Integer.parseInt(listaPasajero[i]);
-				String sql="insert into t_polizapasatemp(tedadpasa,tsecupasa) values ("+edad+","+(i+1)+")";
-//				System.out.println( " slq =====>"+sql);
-				statement.addBatch(sql);
-			}
-			statement.executeBatch();
-			statement.close();
-			
-			
-			
-			cs = cn.prepareCall("{ call cotizar(?,?,?,?,?,"
-											 + "?,?,?,?,?,"
-											 + "?,?,?)}");
-			
-
-			
-			
-			cs.registerOutParameter(1, Types.VARCHAR);
-			cs.registerOutParameter(2, Types.VARCHAR);
-			cs.registerOutParameter(3, Types.REF_CURSOR);//lista
-			cs.registerOutParameter(4, Types.REF_CURSOR);//listaErrorEdad
-			cs.registerOutParameter(5, Types.INTEGER);
-			cs.setInt(6, request.getTcodiusua());
-			cs.setInt(7, request.getTcantviaj());
-			cs.setString(8, request.getTnumetele());
-			cs.setInt(9, request.getTcantdias());
-			cs.setString(10, request.getTcorrviaj());
-			cs.setInt(11, request.getTiddestin());
-			cs.setInt(12, request.getTidorigen());
-			cs.setInt(13, request.getThabimult());
-			
-			cs.execute();
-			
-			if(cs.getString(1)!=null){
-				rpta.setAviso(cs.getString(1));
-			}
-			
-			if(cs.getString(2)!=null){
-				rpta.setError(cs.getString(2));
-			} else{
-				
-				ResultSet rs = (ResultSet) cs.getObject(3);
-				if(rs!=null) {
-					while (rs.next()) {
-						PrecioPlanCotizado obj=new PrecioPlanCotizado();
-						obj.setId_plan(rs.getInt("id_plan"));
-						obj.setId_precio(rs.getInt("id_precio"));
-						obj.setMonto(rs.getDouble("monto"));
-						lista.add(obj);
-						
-					}
-					
-				}
-				
-				rs = (ResultSet) cs.getObject(4);
-				if(rs!=null) {
-					while (rs.next()) {
-						PasajeroError obj=new PasajeroError();
-						obj.setTedadpasa(rs.getInt("tedadpasa"));
-						obj.setTmenserro(rs.getString("tmenserro"));
-						obj.setTsecupasa(rs.getInt("tsecupasa"));
-						listaErrorEdad.add(obj);
-						
-					}
-					
-				}
-			}
-			
-			rpta.setLista(lista);
-			rpta.setListaErrorEdad(listaErrorEdad);
-			
-		}catch (Exception e) {
-			e.printStackTrace();
-			rpta.setError("Error cotizar : "+e.getMessage());
-        } finally {
-            try {
-                if (cn != null) {
-                    cn.close();
-                }
-            } catch (Exception e) {
-            	rpta.setError("Error cerrando conexion cotizar : "+e.getMessage());
-            }
-        }
-		return rpta;
-	}
+//	@Override
+//	public CotizarResponse cotizar(CotizarRequest request) {
+//		CotizarResponse rpta= new CotizarResponse();
+//		Connection cn= null;	
+//		CallableStatement cs = null;
+//		
+//		List<PasajeroError> listaErrorEdad=new ArrayList<>();
+//		List<PrecioPlanCotizado> lista=new ArrayList<>();
+//		try {
+//			cn=jdbcTemplate.getDataSource().getConnection();
+//			cn.setAutoCommit(false);
+//			
+//			// Crear tabla temporal
+//			Statement stmt = cn.createStatement();
+//			stmt.execute("CREATE TEMPORARY TABLE t_polizapasatemp (tedadpasa INTEGER, tsecupasa INTEGER)");
+//
+//			stmt.execute("CREATE TEMPORARY TABLE t_precioplantemp (id_precio INTEGER, id_plan INTEGER, monto NUMERIC)");
+//			
+//			Statement statement = cn.createStatement();			
+//			String []listaPasajero=request.getTlistpasa().split(",");
+//			for(int i=0; i<listaPasajero.length; i++) {
+//				int edad=Integer.parseInt(listaPasajero[i]);
+//				String sql="insert into t_polizapasatemp(tedadpasa,tsecupasa) values ("+edad+","+(i+1)+")";
+////				System.out.println( " slq =====>"+sql);
+//				statement.addBatch(sql);
+//			}
+//			statement.executeBatch();
+//			statement.close();
+//			
+//			
+//			
+//			cs = cn.prepareCall("{ call cotizar(?,?,?,?,?,"
+//											 + "?,?,?,?,?,"
+//											 + "?,?,?)}");
+//			
+//
+//			
+//			
+//			cs.registerOutParameter(1, Types.VARCHAR);
+//			cs.registerOutParameter(2, Types.VARCHAR);
+//			cs.registerOutParameter(3, Types.REF_CURSOR);//lista
+//			cs.registerOutParameter(4, Types.REF_CURSOR);//listaErrorEdad
+//			cs.registerOutParameter(5, Types.INTEGER);
+//			cs.setInt(6, request.getTcodiusua());
+//			cs.setInt(7, request.getTcantviaj());
+//			cs.setString(8, request.getTnumetele());
+//			cs.setInt(9, request.getTcantdias());
+//			cs.setString(10, request.getTcorrviaj());
+//			cs.setInt(11, request.getTiddestin());
+//			cs.setInt(12, request.getTidorigen());
+//			cs.setInt(13, request.getThabimult());
+//			
+//			cs.execute();
+//			
+//			if(cs.getString(1)!=null){
+//				rpta.setAviso(cs.getString(1));
+//			}
+//			
+//			if(cs.getString(2)!=null){
+//				rpta.setError(cs.getString(2));
+//			} else{
+//				
+//				ResultSet rs = (ResultSet) cs.getObject(3);
+//				if(rs!=null) {
+//					while (rs.next()) {
+//						PrecioPlanCotizado obj=new PrecioPlanCotizado();
+//						obj.setId_plan(rs.getInt("id_plan"));
+//						obj.setId_precio(rs.getInt("id_precio"));
+//						obj.setMonto(rs.getDouble("monto"));
+//						lista.add(obj);
+//						
+//					}
+//					
+//				}
+//				
+//				rs = (ResultSet) cs.getObject(4);
+//				if(rs!=null) {
+//					while (rs.next()) {
+//						PasajeroError obj=new PasajeroError();
+//						obj.setTedadpasa(rs.getInt("tedadpasa"));
+//						obj.setTmenserro(rs.getString("tmenserro"));
+//						obj.setTsecupasa(rs.getInt("tsecupasa"));
+//						listaErrorEdad.add(obj);
+//						
+//					}
+//					
+//				}
+//			}
+//			
+//			rpta.setLista(lista);
+//			rpta.setListaErrorEdad(listaErrorEdad);
+//			
+//		}catch (Exception e) {
+//			e.printStackTrace();
+//			rpta.setError("Error cotizar : "+e.getMessage());
+//        } finally {
+//            try {
+//                if (cn != null) {
+//                    cn.close();
+//                }
+//            } catch (Exception e) {
+//            	rpta.setError("Error cerrando conexion cotizar : "+e.getMessage());
+//            }
+//        }
+//		return rpta;
+//	}
 
 	@Override
 	public ListaAgenciaResponse listaAgencias(ListaAgenciaRequest request) {
@@ -945,6 +952,240 @@ public class ModuloDaoImpl extends SimpleJdbcDao implements ModuloDAO{
 		return conn;
 	}
 	*/
+
+	@Override
+	public PaisOrigenResponse listaPaisOrigen(PaisOrigenRequest request) {
+		// TODO Auto-generated method stub
+		PaisOrigenResponse rpta= new PaisOrigenResponse();
+		Connection cn= null;	
+		CallableStatement cs = null;
+		
+		List<PaisOrigen>lista=new ArrayList<PaisOrigen>();
+		
+		try {
+			
+			cn=jdbcTemplate.getDataSource().getConnection();
+			cn.setAutoCommit(false);
+			cs = cn.prepareCall("{call cmb_llenarPaisOrigen("
+														 + "?,?,?,?,?,"
+														 + "?"
+														 + ")}");
+			
+			cs.registerOutParameter(1, Types.VARCHAR);
+			cs.registerOutParameter(2, Types.VARCHAR);
+			cs.registerOutParameter(3, java.sql.Types.REF_CURSOR);
+			
+			cs.setInt(4, request.getId_usuario());
+			cs.setString(5, request.getNumeroip());
+			cs.setInt(6, request.getId_pais());
+			
+			cs.execute();
+			
+			if(cs.getString(1)!=null){
+				rpta.setAviso(cs.getString(1));
+			}
+			
+			if(cs.getString(2)!=null){
+				rpta.setError(cs.getString(2));
+			} else{
+				
+				ResultSet rs = (ResultSet) cs.getObject(3);
+				if(rs!=null) {
+					while (rs.next()) {
+						PaisOrigen obj=new PaisOrigen();
+						obj.setId_pais(rs.getInt("id_pais"));
+						obj.setNombre(rs.getString("nombre"));
+						lista.add(obj);
+					}					
+				}
+			}			
+			rpta.setLista(lista);			
+		}catch (Exception e) {
+			e.printStackTrace();
+			rpta.setError("Error listaPaisOrigen : "+e.getMessage());
+        } finally {
+            try {
+                if (cn != null) {
+                    cn.close();
+                }
+            } catch (Exception e) {
+            	rpta.setError("Error cerrando conexion listaPaisOrigen : "+e.getMessage());
+            }
+        }
+		return rpta;
+	}
+
+	@Override
+	public PaisDestinoResponse listaPaisDestino(PaisDestinoRequest request) {
+		// TODO Auto-generated method stub
+		PaisDestinoResponse rpta= new PaisDestinoResponse();
+		Connection cn= null;	
+		CallableStatement cs = null;
+		
+		List<PaisDestino>listapais=new ArrayList<PaisDestino>();
+		List<Destino>listadestino=new ArrayList<Destino>();
+		
+		try {
+			
+			cn=jdbcTemplate.getDataSource().getConnection();
+			cn.setAutoCommit(false);
+			cs = cn.prepareCall("{call cmb_llenarPaisDestino("
+														 + "?,?,?,?,?,"
+														 + "?,?"
+														 + ")}");
+			
+			cs.registerOutParameter(1, Types.VARCHAR);
+			cs.registerOutParameter(2, Types.VARCHAR);
+			cs.registerOutParameter(3, java.sql.Types.REF_CURSOR);
+			cs.registerOutParameter(4, java.sql.Types.REF_CURSOR);
+			cs.setInt(5, request.getId_usuario());
+			cs.setString(6, request.getNumeroip());
+			cs.setInt(7, request.getId_pais());
+			
+			cs.execute();
+			
+			if(cs.getString(1)!=null){
+				rpta.setAviso(cs.getString(1));
+			}
+			
+			if(cs.getString(2)!=null){
+				rpta.setError(cs.getString(2));
+			} else{
+				
+				ResultSet rs = (ResultSet) cs.getObject(3);
+				if(rs!=null) {
+					while (rs.next()) {
+						Destino obj=new Destino();
+						obj.setId_destino(rs.getInt("id_destino"));
+						obj.setNombre_destino(rs.getString("nombre_destino"));
+						listadestino.add(obj);
+					}					
+				}
+				
+				rs = (ResultSet) cs.getObject(4);
+				if(rs!=null) {
+					while (rs.next()) {
+						PaisDestino obj=new PaisDestino();
+						obj.setId_pais(rs.getInt("id_pais"));
+						obj.setNombre(rs.getString("nombre"));
+						listapais.add(obj);
+					}					
+				}
+			}			
+			rpta.setListadestino(listadestino);
+			rpta.setListapais(listapais);
+			
+		}catch (Exception e) {
+			e.printStackTrace();
+			rpta.setError("Error listaPaisDestino : "+e.getMessage());
+        } finally {
+            try {
+                if (cn != null) {
+                    cn.close();
+                }
+            } catch (Exception e) {
+            	rpta.setError("Error cerrando conexion listaPaisDestino : "+e.getMessage());
+            }
+        }
+		return rpta;
+	}
+	
+	
+	@Override
+	public CotizarResponse cotizar(CotizarRequest request) {
+		CotizarResponse rpta= new CotizarResponse();
+		Connection cn= null;	
+		CallableStatement cs = null;
+		
+		List<PasajeroError> listaErrorEdad=new ArrayList<>();
+		List<PrecioPlanCotizado> lista=new ArrayList<>();
+		try {
+			cn=jdbcTemplate.getDataSource().getConnection();
+			cn.setAutoCommit(false);
+			
+			System.out.println("Dias: "+request.getTcantdias());
+			System.out.println("Cantidad Personas: "+request.getTcantviaj());
+			System.out.println("Id origen: "+request.getTidorigen());
+			System.out.println("Tipo Destino: "+request.getTtipodest());
+			System.out.println("ID Destino: "+request.getTiddestin());
+			for(String cad:request.getTlistpasa()) {
+				System.out.println("Pasajero: "+cad);
+			}
+			
+	        Integer[] edadesArray = {25}; // Debe ser un array de Integer, no int
+	        int idDestino = 4;
+	        String telefono = "123456789";
+	        String email = "cliente@email.com";
+			
+			
+			cs = cn.prepareCall("{ call cotizar_poliza( ?,?,?,?,?,"
+													 + "?,?,?,?,?,"
+													 + "?"
+													 + ")}");
+			
+
+			
+			
+			cs.registerOutParameter(1, Types.VARCHAR);
+			cs.registerOutParameter(2, Types.VARCHAR);
+			cs.registerOutParameter(3, Types.REF_CURSOR);
+			cs.setInt(4, request.getTcantviaj());
+			//cs.setArray(5, cn.createArrayOf("integer", edadesArray));
+			cs.setArray(5, cn.createArrayOf("integer", request.getTlistpasa()));
+			cs.setInt(6, request.getTidorigen());
+			cs.setInt(7, request.getTtipodest());
+			cs.setInt(8, request.getTiddestin());
+			cs.setInt(9, request.getTcantdias());
+			cs.setString(10, telefono);
+			cs.setString(11, email);
+			
+			cs.execute();
+			
+			if(cs.getString(1)!=null){
+				rpta.setAviso(cs.getString(1));
+			}
+			
+			if(cs.getString(2)!=null){
+				rpta.setError(cs.getString(2));
+			} else{
+				
+				ResultSet rs = (ResultSet) cs.getObject(3);
+				if(rs!=null) {
+					while (rs.next()) {
+						PrecioPlanCotizado obj=new PrecioPlanCotizado();
+						obj.setId_plan(rs.getInt("id_plan"));
+						obj.setNombre_plan(rs.getString("nombre_plan"));
+						obj.setPrecio_total(rs.getDouble("precio_total"));
+						obj.setSimbolo_moneda(rs.getString("simbolo_moneda"));
+						obj.setDescripcion_cobertura(rs.getString("descripcion_cobertura"));
+						obj.setImagen(rs.getString("imagen"));
+						obj.setValor_descuento(rs.getDouble("valor_descuento"));
+						obj.setNombre_destino(rs.getString("nombre_destino"));
+						lista.add(obj);
+						
+					}
+					
+				}
+
+			}
+			
+			rpta.setLista(lista);
+			rpta.setListaErrorEdad(listaErrorEdad);
+			
+		}catch (Exception e) {
+			e.printStackTrace();
+			rpta.setError("Error cotizar : "+e.getMessage());
+        } finally {
+            try {
+                if (cn != null) {
+                    cn.close();
+                }
+            } catch (Exception e) {
+            	rpta.setError("Error cerrando conexion cotizar : "+e.getMessage());
+            }
+        }
+		return rpta;
+	}
 
 	
 	
