@@ -1,9 +1,7 @@
 package com.quentin.starassistws.dao.impl;
 
-
 import java.math.BigDecimal;
 import java.sql.CallableStatement;
-
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -67,42 +65,41 @@ import java.sql.DriverManager;
 import java.sql.JDBCType;
 
 @Repository
-public class ModuloDaoImpl extends SimpleJdbcDao implements ModuloDAO{
-	
-	
+public class ModuloDaoImpl extends SimpleJdbcDao implements ModuloDAO {
+
 	@Override
-	public ValidarUsuarioResponse validarUsuario (ValidarUsuarioRequest request) {
-		ValidarUsuarioResponse rpta= new ValidarUsuarioResponse();
-		Connection cn= null;	
+	public ValidarUsuarioResponse validarUsuario(ValidarUsuarioRequest request) {
+		ValidarUsuarioResponse rpta = new ValidarUsuarioResponse();
+		Connection cn = null;
 		CallableStatement cs = null;
-		Usuario usuario= new Usuario();
-		
+		Usuario usuario = new Usuario();
+
 		try {
-			
+
 //			System.out.println("login:"+request.getLogin()+" password:"+request.getPassword());
-			
-			cn=jdbcTemplate.getDataSource().getConnection();
+
+			cn = jdbcTemplate.getDataSource().getConnection();
 			cn.setAutoCommit(false);
 			cs = cn.prepareCall("{call buscarporloginclave(?,?,?,?,?)}");
-			
+
 			cs.setString(1, request.getLogin());
 			cs.setString(2, request.getPassword());
 			cs.registerOutParameter(3, java.sql.Types.REF_CURSOR);
 			cs.registerOutParameter(4, Types.VARCHAR);
 			cs.registerOutParameter(5, Types.VARCHAR);
-			
+
 			cs.execute();
-			
-			if(cs.getString(4)!=null){
+
+			if (cs.getString(4) != null) {
 				rpta.setAviso(cs.getString(4));
 			}
-			
-			if(cs.getString(5)!=null){
+
+			if (cs.getString(5) != null) {
 				rpta.setError(cs.getString(5));
-			} else{
-				
+			} else {
+
 				ResultSet rs = (ResultSet) cs.getObject(3);
-				if(rs!=null) {
+				if (rs != null) {
 					while (rs.next()) {
 						usuario.setIdusuario(rs.getInt("idusuario"));
 						usuario.setNombre(rs.getString("nombre"));
@@ -111,66 +108,64 @@ public class ModuloDaoImpl extends SimpleJdbcDao implements ModuloDAO{
 						usuario.setDni(rs.getString("dni"));
 						usuario.setEmail(rs.getString("email"));
 					}
-					
+
 				}
 			}
-			
+
 			rpta.setUsuario(usuario);
-			
-		}catch (Exception e) {
+
+		} catch (Exception e) {
 			e.printStackTrace();
-			rpta.setError("Error login : "+e.getMessage());
-        } finally {
-            try {
-                if (cn != null) {
-                    cn.close();
-                }
-            } catch (Exception e) {
-            	rpta.setError("Error cerrando conexion login : "+e.getMessage());
-            }
-        }
+			rpta.setError("Error login : " + e.getMessage());
+		} finally {
+			try {
+				if (cn != null) {
+					cn.close();
+				}
+			} catch (Exception e) {
+				rpta.setError("Error cerrando conexion login : " + e.getMessage());
+			}
+		}
 		return rpta;
 	}
-	
+
 	@Override
-	public ListaUsuarioResponse listaUsuarios (ListaUsuarioRequest request) {
-		ListaUsuarioResponse rpta= new ListaUsuarioResponse();
-		Connection cn= null;	
+	public ListaUsuarioResponse listaUsuarios(ListaUsuarioRequest request) {
+		ListaUsuarioResponse rpta = new ListaUsuarioResponse();
+		Connection cn = null;
 		CallableStatement cs = null;
-		
-		List<Usuario>lista=new ArrayList<Usuario>();
-		
+
+		List<Usuario> lista = new ArrayList<Usuario>();
+
 		try {
-			
+
 //			System.out.println("idusuario:"+request.getIdusuario());
-			
-			cn=jdbcTemplate.getDataSource().getConnection();
+
+			cn = jdbcTemplate.getDataSource().getConnection();
 			cn.setAutoCommit(false);
 			cs = cn.prepareCall("{call listausuarios(?,?,?,?,?)}");
-			
-			
-			
+
 			cs.registerOutParameter(1, Types.VARCHAR);
 			cs.registerOutParameter(2, Types.VARCHAR);
 			cs.registerOutParameter(3, java.sql.Types.REF_CURSOR);
-			
+
 			cs.setInt(4, request.getIdusuario());
 			cs.setString(5, request.getNumeroip());
-			
+
 			cs.execute();
-			
-			if(cs.getString(1)!=null){
+
+			if (cs.getString(1) != null) {
 				rpta.setAviso(cs.getString(1));
 			}
-			
-			if(cs.getString(2)!=null){
+
+			if (cs.getString(2) != null) {
 				rpta.setError(cs.getString(2));
-			} else{
-				
+			} else {
+
 				ResultSet rs = (ResultSet) cs.getObject(3);
-				if(rs!=null) {
+				if (rs != null) {
 					while (rs.next()) {
-						Usuario usuario=new Usuario();
+						Usuario usuario = new Usuario();
 //						System.out.println( "direccion: "+rs.getString("direccion"));
 						usuario.setIdusuario(rs.getInt("idusuario"));
 						usuario.setNombre(rs.getString("nombre"));
@@ -184,32 +179,33 @@ public class ModuloDaoImpl extends SimpleJdbcDao implements ModuloDAO{
 						usuario.setTelefono(rs.getString("telefono"));
 						usuario.setId_agencia(rs.getInt("id_agencia"));
 						usuario.setDireccion(rs.getString("direccion"));
-						usuario.setDesc_agencia(rs.getString("desc_agencia")==null?"":rs.getString("desc_agencia"));
+						usuario.setDesc_agencia(
+								rs.getString("desc_agencia") == null ? "" : rs.getString("desc_agencia"));
 						usuario.setHabilitado(rs.getInt("habilitado"));
-						
+
 						lista.add(usuario);
 					}
-					
+
 				}
 			}
-			
+
 			rpta.setLista(lista);
-			
-		}catch (Exception e) {
+
+		} catch (Exception e) {
 			e.printStackTrace();
-			rpta.setError("Error login : "+e.getMessage());
-        } finally {
-            try {
-                if (cn != null) {
-                    cn.close();
-                }
-            } catch (Exception e) {
-            	rpta.setError("Error cerrando conexion login : "+e.getMessage());
-            }
-        }
+			rpta.setError("Error login : " + e.getMessage());
+		} finally {
+			try {
+				if (cn != null) {
+					cn.close();
+				}
+			} catch (Exception e) {
+				rpta.setError("Error cerrando conexion login : " + e.getMessage());
+			}
+		}
 		return rpta;
 	}
-	
+
 //	@Override
 //	public CotizarResponse cotizar(CotizarRequest request) {
 //		CotizarResponse rpta= new CotizarResponse();
@@ -320,38 +316,38 @@ public class ModuloDaoImpl extends SimpleJdbcDao implements ModuloDAO{
 	@Override
 	public ListaAgenciaResponse listaAgencias(ListaAgenciaRequest request) {
 		// TODO Auto-generated method stub
-		ListaAgenciaResponse rpta= new ListaAgenciaResponse();
-		Connection cn= null;	
+		ListaAgenciaResponse rpta = new ListaAgenciaResponse();
+		Connection cn = null;
 		CallableStatement cs = null;
-		
-		List<Agencia>lista=new ArrayList<Agencia>();
-		
+
+		List<Agencia> lista = new ArrayList<Agencia>();
+
 		try {
-			cn=jdbcTemplate.getDataSource().getConnection();
+			cn = jdbcTemplate.getDataSource().getConnection();
 			cn.setAutoCommit(false);
 			cs = cn.prepareCall("{call listaagencias(?,?,?,?,?)}");
-			
+
 			cs.registerOutParameter(1, Types.VARCHAR);
 			cs.registerOutParameter(2, Types.VARCHAR);
 			cs.registerOutParameter(3, java.sql.Types.REF_CURSOR);
-			
+
 			cs.setInt(4, request.getIdusuario());
 			cs.setString(5, request.getNumeroip());
-			
+
 			cs.execute();
-			
-			if(cs.getString(1)!=null){
+
+			if (cs.getString(1) != null) {
 				rpta.setAviso(cs.getString(1));
 			}
-			
-			if(cs.getString(2)!=null){
+
+			if (cs.getString(2) != null) {
 				rpta.setError(cs.getString(2));
-			} else{
-				
+			} else {
+
 				ResultSet rs = (ResultSet) cs.getObject(3);
-				if(rs!=null) {
+				if (rs != null) {
 					while (rs.next()) {
-						Agencia obj=new Agencia();
+						Agencia obj = new Agencia();
 						obj.setId_agencia(rs.getInt("id_agencia"));
 						obj.setId_pais(rs.getInt("id_pais"));
 						obj.setId_ciudad(rs.getInt("id_ciudad"));
@@ -370,62 +366,62 @@ public class ModuloDaoImpl extends SimpleJdbcDao implements ModuloDAO{
 						obj.setHabilitado(rs.getInt("habilitado"));
 						lista.add(obj);
 					}
-					
+
 				}
 			}
-			
+
 			rpta.setLista(lista);
-			
-		}catch (Exception e) {
+
+		} catch (Exception e) {
 			e.printStackTrace();
-			rpta.setError("Error listaAgencias : "+e.getMessage());
-        } finally {
-            try {
-                if (cn != null) {
-                    cn.close();
-                }
-            } catch (Exception e) {
-            	rpta.setError("Error cerrando conexion listaAgencias : "+e.getMessage());
-            }
-        }
+			rpta.setError("Error listaAgencias : " + e.getMessage());
+		} finally {
+			try {
+				if (cn != null) {
+					cn.close();
+				}
+			} catch (Exception e) {
+				rpta.setError("Error cerrando conexion listaAgencias : " + e.getMessage());
+			}
+		}
 		return rpta;
 	}
 
 	@Override
 	public IniciarDatosAgenciaResponse iniciarDatosAgencia(IniciarDatosAgenciaRequest request) {
 		// TODO Auto-generated method stub
-		IniciarDatosAgenciaResponse rpta= new IniciarDatosAgenciaResponse();
-		Connection cn= null;	
+		IniciarDatosAgenciaResponse rpta = new IniciarDatosAgenciaResponse();
+		Connection cn = null;
 		CallableStatement cs = null;
-		
-		List<Pais>lista=new ArrayList<Pais>();
-		
+
+		List<Pais> lista = new ArrayList<Pais>();
+
 		try {
-			
-			cn=jdbcTemplate.getDataSource().getConnection();
+
+			cn = jdbcTemplate.getDataSource().getConnection();
 			cn.setAutoCommit(false);
 			cs = cn.prepareCall("{call inicdataagen(?,?,?,?,?)}");
-			
+
 			cs.registerOutParameter(1, Types.VARCHAR);
 			cs.registerOutParameter(2, Types.VARCHAR);
 			cs.registerOutParameter(3, java.sql.Types.REF_CURSOR);
 			cs.setInt(4, request.getIdusuario());
 			cs.setString(5, request.getNumeroip());
-			
+
 			cs.execute();
-			
-			if(cs.getString(1)!=null){
+
+			if (cs.getString(1) != null) {
 				rpta.setAviso(cs.getString(1));
 			}
-			
-			if(cs.getString(2)!=null){
+
+			if (cs.getString(2) != null) {
 				rpta.setError(cs.getString(2));
-			} else{
-				
+			} else {
+
 				ResultSet rs = (ResultSet) cs.getObject(3);
-				if(rs!=null) {
+				if (rs != null) {
 					while (rs.next()) {
-						Pais obj=new Pais();
+						Pais obj = new Pais();
 						obj.setCode_image(rs.getString("code_image"));
 						obj.setCodigo_postal(rs.getString("codigo_postal"));
 						obj.setContinente(rs.getString("continente"));
@@ -433,271 +429,258 @@ public class ModuloDaoImpl extends SimpleJdbcDao implements ModuloDAO{
 						obj.setNombre(rs.getString("nombre"));
 						lista.add(obj);
 					}
-					
+
 				}
 			}
-			
+
 			rpta.setListaPais(lista);
-			
-		}catch (Exception e) {
+
+		} catch (Exception e) {
 			e.printStackTrace();
-			rpta.setError("Error iniciarDatosAgencia : "+e.getMessage());
-        } finally {
-            try {
-                if (cn != null) {
-                    cn.close();
-                }
-            } catch (Exception e) {
-            	rpta.setError("Error cerrando conexion iniciarDatosAgencia : "+e.getMessage());
-            }
-        }
+			rpta.setError("Error iniciarDatosAgencia : " + e.getMessage());
+		} finally {
+			try {
+				if (cn != null) {
+					cn.close();
+				}
+			} catch (Exception e) {
+				rpta.setError("Error cerrando conexion iniciarDatosAgencia : " + e.getMessage());
+			}
+		}
 		return rpta;
 	}
 
 	@Override
 	public ListaCiudadPaisResponse listarCiudadXPais(ListaCiudadPaisRequest request) {
 		// TODO Auto-generated method stub
-		ListaCiudadPaisResponse rpta= new ListaCiudadPaisResponse();
-		Connection cn= null;	
+		ListaCiudadPaisResponse rpta = new ListaCiudadPaisResponse();
+		Connection cn = null;
 		CallableStatement cs = null;
-		
-		List<Ciudad>lista=new ArrayList<Ciudad>();
-		
+
+		List<Ciudad> lista = new ArrayList<Ciudad>();
+
 		try {
-			
+
 //			System.out.println("idusuario:"+request.getIdusuario());
-			
-			cn=jdbcTemplate.getDataSource().getConnection();
+
+			cn = jdbcTemplate.getDataSource().getConnection();
 			cn.setAutoCommit(false);
-			cs = cn.prepareCall("{call listciudxpais(?,?,?,?,?,"
-												  + "?)}");
-			
+			cs = cn.prepareCall("{call listciudxpais(?,?,?,?,?," + "?)}");
+
 			cs.registerOutParameter(1, Types.VARCHAR);
 			cs.registerOutParameter(2, Types.VARCHAR);
 			cs.registerOutParameter(3, java.sql.Types.REF_CURSOR);
-			
+
 			cs.setInt(4, request.getIdusuario());
 			cs.setString(5, request.getNumeroip());
 			cs.setInt(6, request.getId_pais());
-			
+
 			cs.execute();
-			
-			if(cs.getString(1)!=null){
+
+			if (cs.getString(1) != null) {
 				rpta.setAviso(cs.getString(1));
 			}
-			
-			if(cs.getString(2)!=null){
+
+			if (cs.getString(2) != null) {
 				rpta.setError(cs.getString(2));
-			} else{
-				
+			} else {
+
 				ResultSet rs = (ResultSet) cs.getObject(3);
-				if(rs!=null) {
+				if (rs != null) {
 					while (rs.next()) {
-						Ciudad obj=new Ciudad();
+						Ciudad obj = new Ciudad();
 						obj.setId_ciudad(rs.getInt("id_ciudad"));
 						obj.setId_pais(rs.getInt("id_pais"));
 						obj.setNombre(rs.getString("nombre"));
 						lista.add(obj);
 					}
-					
+
 				}
 			}
-			
+
 			rpta.setListaCiudad(lista);
-			
-		}catch (Exception e) {
+
+		} catch (Exception e) {
 			e.printStackTrace();
-			rpta.setError("Error listarCiudadXPais : "+e.getMessage());
-        } finally {
-            try {
-                if (cn != null) {
-                    cn.close();
-                }
-            } catch (Exception e) {
-            	rpta.setError("Error cerrando conexion listarCiudadXPais : "+e.getMessage());
-            }
-        }
+			rpta.setError("Error listarCiudadXPais : " + e.getMessage());
+		} finally {
+			try {
+				if (cn != null) {
+					cn.close();
+				}
+			} catch (Exception e) {
+				rpta.setError("Error cerrando conexion listarCiudadXPais : " + e.getMessage());
+			}
+		}
 		return rpta;
 	}
 
 	@Override
 	public CrudAgenciaResponse crudAgencia(CrudAgenciaRequest request) {
 		// TODO Auto-generated method stub
-		CrudAgenciaResponse rpta= new CrudAgenciaResponse();
-		Connection cn= null;	
+		CrudAgenciaResponse rpta = new CrudAgenciaResponse();
+		Connection cn = null;
 		CallableStatement cs = null;
-		
-		
+
 		try {
-			
+
 //			System.out.println("idusuario:"+request.getIdusuario());
 //			System.out.println("id_pais:"+request.getAgencia().getId_pais());
-			
-			cn=jdbcTemplate.getDataSource().getConnection();
-			//cn.setAutoCommit(false);
-			cs = cn.prepareCall("{call crud_agencia("
-												  +"?,?,?,?,?,"
-												  +"?,?,?,?,?,"
-												  +"?,?,?,?,?,"
-												  +"?,?,?,?"
-												+ ")}");
-			
+
+			cn = jdbcTemplate.getDataSource().getConnection();
+			// cn.setAutoCommit(false);
+			cs = cn.prepareCall("{call crud_agencia(" + "?,?,?,?,?," + "?,?,?,?,?," + "?,?,?,?,?," + "?,?,?,?" + ")}");
+
 			cs.registerOutParameter(1, Types.VARCHAR);
 			cs.registerOutParameter(2, Types.VARCHAR);
 			cs.registerOutParameter(3, Types.INTEGER);
-			
+
 			cs.setInt(4, request.getIdusuario());
 			cs.setString(5, request.getNumeroip());
-			cs.setInt(6, request.getAgencia()==null?0:request.getAgencia().getId_pais());
-			cs.setInt(7, request.getAgencia()==null?0:request.getAgencia().getId_ciudad());
+			cs.setInt(6, request.getAgencia() == null ? 0 : request.getAgencia().getId_pais());
+			cs.setInt(7, request.getAgencia() == null ? 0 : request.getAgencia().getId_ciudad());
 			cs.setString(8, request.getAgencia().getRazon_social());
-			cs.setString(9, request.getAgencia().getNit()==null?"":request.getAgencia().getNit());
-			cs.setString(10, request.getAgencia().getDireccion()==null?"":request.getAgencia().getDireccion());
-			cs.setString(11, request.getAgencia().getTelefono()==null?"":request.getAgencia().getTelefono());
-			cs.setString(12, request.getAgencia().getRnt()==null?"":request.getAgencia().getRnt());
-			cs.setString(13, request.getAgencia().getEmail()==null?"":request.getAgencia().getEmail());
-			cs.setString(14, request.getAgencia().getPersona_referencia()==null?"":request.getAgencia().getPersona_referencia());
-			cs.setString(15, request.getAgencia().getEstado()==null?"":request.getAgencia().getEstado());
-			cs.setString(16, request.getAgencia().getCodigo_descuento()==null?"": request.getAgencia().getCodigo_descuento());
-			cs.setDouble(17, request.getAgencia().getPorcentaje_descuento()==null?0:request.getAgencia().getPorcentaje_descuento());
+			cs.setString(9, request.getAgencia().getNit() == null ? "" : request.getAgencia().getNit());
+			cs.setString(10, request.getAgencia().getDireccion() == null ? "" : request.getAgencia().getDireccion());
+			cs.setString(11, request.getAgencia().getTelefono() == null ? "" : request.getAgencia().getTelefono());
+			cs.setString(12, request.getAgencia().getRnt() == null ? "" : request.getAgencia().getRnt());
+			cs.setString(13, request.getAgencia().getEmail() == null ? "" : request.getAgencia().getEmail());
+			cs.setString(14, request.getAgencia().getPersona_referencia() == null ? ""
+					: request.getAgencia().getPersona_referencia());
+			cs.setString(15, request.getAgencia().getEstado() == null ? "" : request.getAgencia().getEstado());
+			cs.setString(16, request.getAgencia().getCodigo_descuento() == null ? ""
+					: request.getAgencia().getCodigo_descuento());
+			cs.setDouble(17, request.getAgencia().getPorcentaje_descuento() == null ? 0
+					: request.getAgencia().getPorcentaje_descuento());
 			cs.setInt(18, request.getAgencia().getId_agencia());
-			cs.setString(19, request.getTipo_operacion()==null?"":request.getTipo_operacion());
-			
+			cs.setString(19, request.getTipo_operacion() == null ? "" : request.getTipo_operacion());
+
 			cs.execute();
-			
-			if(cs.getString(1)!=null){
+
+			if (cs.getString(1) != null) {
 				rpta.setAviso(cs.getString(1));
 			}
-			
-			if(cs.getString(2)!=null){
+
+			if (cs.getString(2) != null) {
 				rpta.setError(cs.getString(2));
 			}
-			
-			
-			
-		}catch (Exception e) {
+
+		} catch (Exception e) {
 			e.printStackTrace();
-			rpta.setError("Error crudAgencia : "+e.getMessage());
-        } finally {
-            try {
-                if (cn != null) {
-                    cn.close();
-                }
-            } catch (Exception e) {
-            	rpta.setError("Error cerrando conexion crudAgencia : "+e.getMessage());
-            }
-        }
+			rpta.setError("Error crudAgencia : " + e.getMessage());
+		} finally {
+			try {
+				if (cn != null) {
+					cn.close();
+				}
+			} catch (Exception e) {
+				rpta.setError("Error cerrando conexion crudAgencia : " + e.getMessage());
+			}
+		}
 		return rpta;
 	}
-	
+
 	@Override
 	public CrudAgenciaResponse habilitarAgencia(CrudAgenciaRequest request) {
 		// TODO Auto-generated method stub
-		CrudAgenciaResponse rpta= new CrudAgenciaResponse();
-		Connection cn= null;	
+		CrudAgenciaResponse rpta = new CrudAgenciaResponse();
+		Connection cn = null;
 		CallableStatement cs = null;
-		
-		
+
 		try {
-			
-			cn=jdbcTemplate.getDataSource().getConnection();
-			cs = cn.prepareCall("{call habilitar_agencia("
-												  +"?,?,?,?,?,"
-												  +"?,?,?,?,?,"
-												  +"?,?,?,?,?,"
-												  +"?,?,?,?"
-												+ ")}");
-			
+
+			cn = jdbcTemplate.getDataSource().getConnection();
+			cs = cn.prepareCall(
+					"{call habilitar_agencia(" + "?,?,?,?,?," + "?,?,?,?,?," + "?,?,?,?,?," + "?,?,?,?" + ")}");
+
 			cs.registerOutParameter(1, Types.VARCHAR);
 			cs.registerOutParameter(2, Types.VARCHAR);
 			cs.registerOutParameter(3, Types.INTEGER);
-			
+
 			cs.setInt(4, request.getIdusuario());
 			cs.setString(5, request.getNumeroip());
-			cs.setInt(6, request.getAgencia()==null?0:request.getAgencia().getId_pais());
-			cs.setInt(7, request.getAgencia()==null?0:request.getAgencia().getId_ciudad());
+			cs.setInt(6, request.getAgencia() == null ? 0 : request.getAgencia().getId_pais());
+			cs.setInt(7, request.getAgencia() == null ? 0 : request.getAgencia().getId_ciudad());
 			cs.setString(8, request.getAgencia().getRazon_social());
-			cs.setString(9, request.getAgencia().getNit()==null?"":request.getAgencia().getNit());
-			cs.setString(10, request.getAgencia().getDireccion()==null?"":request.getAgencia().getDireccion());
-			cs.setString(11, request.getAgencia().getTelefono()==null?"":request.getAgencia().getTelefono());
-			cs.setString(12, request.getAgencia().getRnt()==null?"":request.getAgencia().getRnt());
-			cs.setString(13, request.getAgencia().getEmail()==null?"":request.getAgencia().getEmail());
-			cs.setString(14, request.getAgencia().getPersona_referencia()==null?"":request.getAgencia().getPersona_referencia());
-			cs.setString(15, request.getAgencia().getEstado()==null?"":request.getAgencia().getEstado());
-			cs.setString(16, request.getAgencia().getCodigo_descuento()==null?"": request.getAgencia().getCodigo_descuento());
-			cs.setDouble(17, request.getAgencia().getPorcentaje_descuento()==null?0:request.getAgencia().getPorcentaje_descuento());
+			cs.setString(9, request.getAgencia().getNit() == null ? "" : request.getAgencia().getNit());
+			cs.setString(10, request.getAgencia().getDireccion() == null ? "" : request.getAgencia().getDireccion());
+			cs.setString(11, request.getAgencia().getTelefono() == null ? "" : request.getAgencia().getTelefono());
+			cs.setString(12, request.getAgencia().getRnt() == null ? "" : request.getAgencia().getRnt());
+			cs.setString(13, request.getAgencia().getEmail() == null ? "" : request.getAgencia().getEmail());
+			cs.setString(14, request.getAgencia().getPersona_referencia() == null ? ""
+					: request.getAgencia().getPersona_referencia());
+			cs.setString(15, request.getAgencia().getEstado() == null ? "" : request.getAgencia().getEstado());
+			cs.setString(16, request.getAgencia().getCodigo_descuento() == null ? ""
+					: request.getAgencia().getCodigo_descuento());
+			cs.setDouble(17, request.getAgencia().getPorcentaje_descuento() == null ? 0
+					: request.getAgencia().getPorcentaje_descuento());
 			cs.setInt(18, request.getAgencia().getId_agencia());
-			cs.setString(19, request.getTipo_operacion()==null?"":request.getTipo_operacion());
-			
+			cs.setString(19, request.getTipo_operacion() == null ? "" : request.getTipo_operacion());
+
 			cs.execute();
-			
-			if(cs.getString(1)!=null){
+
+			if (cs.getString(1) != null) {
 				rpta.setAviso(cs.getString(1));
 			}
-			
-			if(cs.getString(2)!=null){
+
+			if (cs.getString(2) != null) {
 				rpta.setError(cs.getString(2));
 			}
-			
-			
-			
-		}catch (Exception e) {
+
+		} catch (Exception e) {
 			e.printStackTrace();
-			rpta.setError("Error crudAgencia : "+e.getMessage());
-        } finally {
-            try {
-                if (cn != null) {
-                    cn.close();
-                }
-            } catch (Exception e) {
-            	rpta.setError("Error cerrando conexion crudAgencia : "+e.getMessage());
-            }
-        }
+			rpta.setError("Error crudAgencia : " + e.getMessage());
+		} finally {
+			try {
+				if (cn != null) {
+					cn.close();
+				}
+			} catch (Exception e) {
+				rpta.setError("Error cerrando conexion crudAgencia : " + e.getMessage());
+			}
+		}
 		return rpta;
 	}
 
 	@Override
 	public CrudUsuarioResponse crudUsuario(CrudUsuarioRequest request) {
 		// TODO Auto-generated method stub
-		CrudUsuarioResponse rpta= new CrudUsuarioResponse();
-		Connection cn= null;	
+		CrudUsuarioResponse rpta = new CrudUsuarioResponse();
+		Connection cn = null;
 		CallableStatement cs = null;
-		
-		
+
 		try {
-			
+
 //			System.out.println("crudUsuario -- idusuario:"+request.getIdusuario()+" usuario Edit"+request.getUsuario().getIdusuario());
-	
-			
-			cn=jdbcTemplate.getDataSource().getConnection();
-			//cn.setAutoCommit(false);
-			cs = cn.prepareCall("{call crud_usuario("
-												  +"?,?,?,?,?," +"?,?,?,?,?,"
-												  +"?,?,?,?,?," +"?,?,?,?,?,"
-												  +"?,?,?,?,?," +"?,?,?,?"
-												+ ")}");
-			
+
+			cn = jdbcTemplate.getDataSource().getConnection();
+			// cn.setAutoCommit(false);
+			cs = cn.prepareCall("{call crud_usuario(" + "?,?,?,?,?," + "?,?,?,?,?," + "?,?,?,?,?," + "?,?,?,?,?,"
+					+ "?,?,?,?,?," + "?,?,?,?" + ")}");
+
 			cs.registerOutParameter(1, Types.VARCHAR);
 			cs.registerOutParameter(2, Types.VARCHAR);
 			cs.registerOutParameter(3, Types.INTEGER);
 			cs.registerOutParameter(4, Types.VARCHAR);
-			
+
 			cs.setInt(5, request.getIdusuario());
 			cs.setString(6, request.getNumeroip());
-			
+
 			cs.setString(7, request.getTipo_operacion());
-			cs.setString(8, request.getUsuario().getDni()==null?"":request.getUsuario().getDni());
-			cs.setString(9, request.getUsuario().getNombre()==null?"":request.getUsuario().getNombre());
-			cs.setString(10, request.getUsuario().getApellido_paterno()==null?"":request.getUsuario().getApellido_paterno());
-			cs.setString(11, request.getUsuario().getApellido_materno()==null?"":request.getUsuario().getApellido_materno());
-			cs.setString(12, request.getUsuario().getEmail()==null?"":request.getUsuario().getEmail());
-			cs.setString(13, request.getUsuario().getDireccion()==null?"":request.getUsuario().getDireccion());
-			cs.setString(14, request.getUsuario().getTelefono()==null?"":request.getUsuario().getTelefono());
-			cs.setString(15, request.getUsuario().getLogin()==null?"":request.getUsuario().getLogin());
-			cs.setString(16, request.getUsuario().getPassword()==null?"":request.getUsuario().getPassword());
+			cs.setString(8, request.getUsuario().getDni() == null ? "" : request.getUsuario().getDni());
+			cs.setString(9, request.getUsuario().getNombre() == null ? "" : request.getUsuario().getNombre());
+			cs.setString(10, request.getUsuario().getApellido_paterno() == null ? ""
+					: request.getUsuario().getApellido_paterno());
+			cs.setString(11, request.getUsuario().getApellido_materno() == null ? ""
+					: request.getUsuario().getApellido_materno());
+			cs.setString(12, request.getUsuario().getEmail() == null ? "" : request.getUsuario().getEmail());
+			cs.setString(13, request.getUsuario().getDireccion() == null ? "" : request.getUsuario().getDireccion());
+			cs.setString(14, request.getUsuario().getTelefono() == null ? "" : request.getUsuario().getTelefono());
+			cs.setString(15, request.getUsuario().getLogin() == null ? "" : request.getUsuario().getLogin());
+			cs.setString(16, request.getUsuario().getPassword() == null ? "" : request.getUsuario().getPassword());
 			cs.setInt(17, request.getUsuario().getId_agencia());
 			cs.setInt(18, request.getUsuario().getIdusuario());
-			
+
 			cs.registerOutParameter(19, Types.VARCHAR);
 			cs.registerOutParameter(20, Types.VARCHAR);
 			cs.registerOutParameter(21, Types.VARCHAR);
@@ -709,135 +692,134 @@ public class ModuloDaoImpl extends SimpleJdbcDao implements ModuloDAO{
 			cs.registerOutParameter(27, Types.VARCHAR);
 			cs.registerOutParameter(28, Types.VARCHAR);
 			cs.registerOutParameter(29, Types.VARCHAR);
-			
-			
+
 			cs.execute();
-			
-			if(cs.getString(1)!=null){
+
+			if (cs.getString(1) != null) {
 				rpta.setAviso(cs.getString(1));
 			}
-			
-			if(cs.getString(2)!=null){
+
+			if (cs.getString(2) != null) {
 				rpta.setError(cs.getString(2));
-			}else {
-				if(request.getTipo_operacion().equalsIgnoreCase("I")) {
-					String codigo="";
-					
-					if(cs.getString(4)!=null) {
-						codigo=cs.getString(4);
+			} else {
+				if (request.getTipo_operacion().equalsIgnoreCase("I")) {
+					String codigo = "";
+
+					if (cs.getString(4) != null) {
+						codigo = cs.getString(4);
 					}
-					//PARAMETROS
-					ParametroCorreo parametro=new ParametroCorreo();
-					if(cs.getString(19)!=null) {
+					// PARAMETROS
+					ParametroCorreo parametro = new ParametroCorreo();
+					if (cs.getString(19) != null) {
 						parametro.setCopia_oculto(cs.getString(19));
 					}
-					if(cs.getString(20)!=null) {
+					if (cs.getString(20) != null) {
 						parametro.setCopia_normal(cs.getString(20));
 					}
-					if(cs.getString(21)!=null) {
+					if (cs.getString(21) != null) {
 						parametro.setUsuario_correo(cs.getString(21));
 					}
-					if(cs.getString(22)!=null) {
+					if (cs.getString(22) != null) {
 						parametro.setPassword_correo(cs.getString(22));
 					}
-					if(cs.getString(23)!=null) {
+					if (cs.getString(23) != null) {
 						parametro.setAsunto(cs.getString(23));
 					}
-					if(cs.getString(24)!=null) {
+					if (cs.getString(24) != null) {
 						parametro.setSaludo_inicio(cs.getString(24));
 					}
-					if(cs.getString(25)!=null) {
+					if (cs.getString(25) != null) {
 						parametro.setPresentacion(cs.getString(25));
 					}
-					if(cs.getString(26)!=null) {
+					if (cs.getString(26) != null) {
 						parametro.setCuerpo_mensaje(cs.getString(26));
 					}
-					if(cs.getString(27)!=null) {
+					if (cs.getString(27) != null) {
 						parametro.setSaludo_despedida(cs.getString(27));
 					}
-					if(cs.getString(28)!=null) {
+					if (cs.getString(28) != null) {
 						parametro.setFirma_correo(cs.getString(28));
 					}
-					if(cs.getString(29)!=null) {
+					if (cs.getString(29) != null) {
 						parametro.setCorreo_contacto(cs.getString(29));
 					}
-					 
-					
-					EnvioCorreo envio=new EnvioCorreo();
-					envio.sendEmail(
-									parametro.getAsunto(), 			//asunto, 
-									parametro.getUsuario_correo(),	//username, 
-									parametro.getPassword_correo(),	//password, 
-									request.getUsuario().getEmail(),//destinatario, 
-									parametro.getCopia_normal(),	//correosCopiasNormales, 
-									parametro.getCopia_oculto(),	//correosCopiasOcultas, 
-									parametro.getSaludo_inicio(),	//saludoInicio 
-									parametro.getPresentacion(),	//presentacion 
-									parametro.getCuerpo_mensaje().replaceAll("_USUARIO_", request.getUsuario().getLogin()==null?"":request.getUsuario().getLogin()
-																	  ).replaceAll("_AGENCIA_", request.getUsuario().getDesc_agencia()==null?"":request.getUsuario().getDesc_agencia()
-																	  ).replaceAll("_CODIGO_", codigo==null?"": codigo),//cuerpoMensaje 
-									parametro.getSaludo_despedida(), //saludoDespedida 
-									parametro.getFirma_correo(),	//firma 
-									parametro.getCorreo_contacto()	//correContacto
-									);
+
+					EnvioCorreo envio = new EnvioCorreo();
+					envio.sendEmail(parametro.getAsunto(), // asunto,
+							parametro.getUsuario_correo(), // username,
+							parametro.getPassword_correo(), // password,
+							request.getUsuario().getEmail(), // destinatario,
+							parametro.getCopia_normal(), // correosCopiasNormales,
+							parametro.getCopia_oculto(), // correosCopiasOcultas,
+							parametro.getSaludo_inicio(), // saludoInicio
+							parametro.getPresentacion(), // presentacion
+							parametro.getCuerpo_mensaje()
+									.replaceAll("_USUARIO_",
+											request.getUsuario().getLogin() == null ? ""
+													: request.getUsuario().getLogin())
+									.replaceAll("_AGENCIA_",
+											request.getUsuario().getDesc_agencia() == null ? ""
+													: request.getUsuario().getDesc_agencia())
+									.replaceAll("_CODIGO_", codigo == null ? "" : codigo), // cuerpoMensaje
+							parametro.getSaludo_despedida(), // saludoDespedida
+							parametro.getFirma_correo(), // firma
+							parametro.getCorreo_contacto() // correContacto
+					);
 				}
-					
+
 			}
-			
-			
-			
-		}catch (Exception e) {
+
+		} catch (Exception e) {
 			e.printStackTrace();
-			rpta.setError("Error crudUsuario : "+e.getMessage());
-        } finally {
-            try {
-                if (cn != null) {
-                    cn.close();
-                }
-            } catch (Exception e) {
-            	rpta.setError("Error cerrando conexion crudUsuario : "+e.getMessage());
-            }
-        }
+			rpta.setError("Error crudUsuario : " + e.getMessage());
+		} finally {
+			try {
+				if (cn != null) {
+					cn.close();
+				}
+			} catch (Exception e) {
+				rpta.setError("Error cerrando conexion crudUsuario : " + e.getMessage());
+			}
+		}
 		return rpta;
 	}
-	
+
 	@Override
 	public CrudUsuarioResponse habilitarUsuario(CrudUsuarioRequest request) {
 		// TODO Auto-generated method stub
-		CrudUsuarioResponse rpta= new CrudUsuarioResponse();
-		Connection cn= null;	
+		CrudUsuarioResponse rpta = new CrudUsuarioResponse();
+		Connection cn = null;
 		CallableStatement cs = null;
-		
+
 		try {
-			cn=jdbcTemplate.getDataSource().getConnection();
-			//cn.setAutoCommit(false);
-			cs = cn.prepareCall("{call habilitar_usuario("
-												  +"?,?,?,?,?," +"?,?,?,?,?,"
-												  +"?,?,?,?,?," +"?,?,?,?,?,"
-												  +"?,?,?,?,?," +"?,?,?,?"
-												+ ")}");
-			
+			cn = jdbcTemplate.getDataSource().getConnection();
+			// cn.setAutoCommit(false);
+			cs = cn.prepareCall("{call habilitar_usuario(" + "?,?,?,?,?," + "?,?,?,?,?," + "?,?,?,?,?," + "?,?,?,?,?,"
+					+ "?,?,?,?,?," + "?,?,?,?" + ")}");
+
 			cs.registerOutParameter(1, Types.VARCHAR);
 			cs.registerOutParameter(2, Types.VARCHAR);
 			cs.registerOutParameter(3, Types.INTEGER);
 			cs.registerOutParameter(4, Types.VARCHAR);
-			
+
 			cs.setInt(5, request.getIdusuario());
 			cs.setString(6, request.getNumeroip());
-			
+
 			cs.setString(7, request.getTipo_operacion());
-			cs.setString(8, request.getUsuario().getDni()==null?"":request.getUsuario().getDni());
-			cs.setString(9, request.getUsuario().getNombre()==null?"":request.getUsuario().getNombre());
-			cs.setString(10, request.getUsuario().getApellido_paterno()==null?"":request.getUsuario().getApellido_paterno());
-			cs.setString(11, request.getUsuario().getApellido_materno()==null?"":request.getUsuario().getApellido_materno());
-			cs.setString(12, request.getUsuario().getEmail()==null?"":request.getUsuario().getEmail());
-			cs.setString(13, request.getUsuario().getDireccion()==null?"":request.getUsuario().getDireccion());
-			cs.setString(14, request.getUsuario().getTelefono()==null?"":request.getUsuario().getTelefono());
-			cs.setString(15, request.getUsuario().getLogin()==null?"":request.getUsuario().getLogin());
-			cs.setString(16, request.getUsuario().getPassword()==null?"":request.getUsuario().getPassword());
+			cs.setString(8, request.getUsuario().getDni() == null ? "" : request.getUsuario().getDni());
+			cs.setString(9, request.getUsuario().getNombre() == null ? "" : request.getUsuario().getNombre());
+			cs.setString(10, request.getUsuario().getApellido_paterno() == null ? ""
+					: request.getUsuario().getApellido_paterno());
+			cs.setString(11, request.getUsuario().getApellido_materno() == null ? ""
+					: request.getUsuario().getApellido_materno());
+			cs.setString(12, request.getUsuario().getEmail() == null ? "" : request.getUsuario().getEmail());
+			cs.setString(13, request.getUsuario().getDireccion() == null ? "" : request.getUsuario().getDireccion());
+			cs.setString(14, request.getUsuario().getTelefono() == null ? "" : request.getUsuario().getTelefono());
+			cs.setString(15, request.getUsuario().getLogin() == null ? "" : request.getUsuario().getLogin());
+			cs.setString(16, request.getUsuario().getPassword() == null ? "" : request.getUsuario().getPassword());
 			cs.setInt(17, request.getUsuario().getId_agencia());
 			cs.setInt(18, request.getUsuario().getIdusuario());
-			
+
 			cs.registerOutParameter(19, Types.VARCHAR);
 			cs.registerOutParameter(20, Types.VARCHAR);
 			cs.registerOutParameter(21, Types.VARCHAR);
@@ -849,191 +831,180 @@ public class ModuloDaoImpl extends SimpleJdbcDao implements ModuloDAO{
 			cs.registerOutParameter(27, Types.VARCHAR);
 			cs.registerOutParameter(28, Types.VARCHAR);
 			cs.registerOutParameter(29, Types.VARCHAR);
-			
-			
+
 			cs.execute();
-			
-			if(cs.getString(1)!=null){
+
+			if (cs.getString(1) != null) {
 				rpta.setAviso(cs.getString(1));
 			}
-			
-			if(cs.getString(2)!=null){
+
+			if (cs.getString(2) != null) {
 				rpta.setError(cs.getString(2));
-			}else {
-				if(request.getTipo_operacion().equalsIgnoreCase("I")) {
-					String codigo="";
-					
-					if(cs.getString(4)!=null) {
-						codigo=cs.getString(4);
+			} else {
+				if (request.getTipo_operacion().equalsIgnoreCase("I")) {
+					String codigo = "";
+
+					if (cs.getString(4) != null) {
+						codigo = cs.getString(4);
 					}
-					//PARAMETROS
-					ParametroCorreo parametro=new ParametroCorreo();
-					if(cs.getString(19)!=null) {
+					// PARAMETROS
+					ParametroCorreo parametro = new ParametroCorreo();
+					if (cs.getString(19) != null) {
 						parametro.setCopia_oculto(cs.getString(19));
 					}
-					if(cs.getString(20)!=null) {
+					if (cs.getString(20) != null) {
 						parametro.setCopia_normal(cs.getString(20));
 					}
-					if(cs.getString(21)!=null) {
+					if (cs.getString(21) != null) {
 						parametro.setUsuario_correo(cs.getString(21));
 					}
-					if(cs.getString(22)!=null) {
+					if (cs.getString(22) != null) {
 						parametro.setPassword_correo(cs.getString(22));
 					}
-					if(cs.getString(23)!=null) {
+					if (cs.getString(23) != null) {
 						parametro.setAsunto(cs.getString(23));
 					}
-					if(cs.getString(24)!=null) {
+					if (cs.getString(24) != null) {
 						parametro.setSaludo_inicio(cs.getString(24));
 					}
-					if(cs.getString(25)!=null) {
+					if (cs.getString(25) != null) {
 						parametro.setPresentacion(cs.getString(25));
 					}
-					if(cs.getString(26)!=null) {
+					if (cs.getString(26) != null) {
 						parametro.setCuerpo_mensaje(cs.getString(26));
 					}
-					if(cs.getString(27)!=null) {
+					if (cs.getString(27) != null) {
 						parametro.setSaludo_despedida(cs.getString(27));
 					}
-					if(cs.getString(28)!=null) {
+					if (cs.getString(28) != null) {
 						parametro.setFirma_correo(cs.getString(28));
 					}
-					if(cs.getString(29)!=null) {
+					if (cs.getString(29) != null) {
 						parametro.setCorreo_contacto(cs.getString(29));
 					}
-					 
-					
-					EnvioCorreo envio=new EnvioCorreo();
-					envio.sendEmail(
-									parametro.getAsunto(), 			//asunto, 
-									parametro.getUsuario_correo(),	//username, 
-									parametro.getPassword_correo(),	//password, 
-									request.getUsuario().getEmail(),//destinatario, 
-									parametro.getCopia_normal(),	//correosCopiasNormales, 
-									parametro.getCopia_oculto(),	//correosCopiasOcultas, 
-									parametro.getSaludo_inicio(),	//saludoInicio 
-									parametro.getPresentacion(),	//presentacion 
-									parametro.getCuerpo_mensaje().replaceAll("_USUARIO_", request.getUsuario().getLogin()==null?"":request.getUsuario().getLogin()
-																	  ).replaceAll("_AGENCIA_", request.getUsuario().getDesc_agencia()==null?"":request.getUsuario().getDesc_agencia()
-																	  ).replaceAll("_CODIGO_", codigo==null?"": codigo),//cuerpoMensaje 
-									parametro.getSaludo_despedida(), //saludoDespedida 
-									parametro.getFirma_correo(),	//firma 
-									parametro.getCorreo_contacto()	//correContacto
-									);
+
+					EnvioCorreo envio = new EnvioCorreo();
+					envio.sendEmail(parametro.getAsunto(), // asunto,
+							parametro.getUsuario_correo(), // username,
+							parametro.getPassword_correo(), // password,
+							request.getUsuario().getEmail(), // destinatario,
+							parametro.getCopia_normal(), // correosCopiasNormales,
+							parametro.getCopia_oculto(), // correosCopiasOcultas,
+							parametro.getSaludo_inicio(), // saludoInicio
+							parametro.getPresentacion(), // presentacion
+							parametro.getCuerpo_mensaje()
+									.replaceAll("_USUARIO_",
+											request.getUsuario().getLogin() == null ? ""
+													: request.getUsuario().getLogin())
+									.replaceAll("_AGENCIA_",
+											request.getUsuario().getDesc_agencia() == null ? ""
+													: request.getUsuario().getDesc_agencia())
+									.replaceAll("_CODIGO_", codigo == null ? "" : codigo), // cuerpoMensaje
+							parametro.getSaludo_despedida(), // saludoDespedida
+							parametro.getFirma_correo(), // firma
+							parametro.getCorreo_contacto() // correContacto
+					);
 				}
-					
+
 			}
-			
-			
-			
-		}catch (Exception e) {
+
+		} catch (Exception e) {
 			e.printStackTrace();
-			rpta.setError("Error crudUsuario : "+e.getMessage());
-        } finally {
-            try {
-                if (cn != null) {
-                    cn.close();
-                }
-            } catch (Exception e) {
-            	rpta.setError("Error cerrando conexion crudUsuario : "+e.getMessage());
-            }
-        }
+			rpta.setError("Error crudUsuario : " + e.getMessage());
+		} finally {
+			try {
+				if (cn != null) {
+					cn.close();
+				}
+			} catch (Exception e) {
+				rpta.setError("Error cerrando conexion crudUsuario : " + e.getMessage());
+			}
+		}
 		return rpta;
 	}
 	/*
-	public Connection getConnectionRemota throws Exception{
-		Connection conn = null;
-		String url = "";
-		String username="";
-		String password="";
-		Class.forName("");
-		
-		conn = DriverManager.getConnection(url, username, password);
-		return conn;
-	}
-	*/
+	 * public Connection getConnectionRemota throws Exception{ Connection conn =
+	 * null; String url = ""; String username=""; String password="";
+	 * Class.forName("");
+	 * 
+	 * conn = DriverManager.getConnection(url, username, password); return conn; }
+	 */
 
 	@Override
 	public PaisOrigenResponse listaPaisOrigen(PaisOrigenRequest request) {
 		// TODO Auto-generated method stub
-		PaisOrigenResponse rpta= new PaisOrigenResponse();
-		Connection cn= null;	
+		PaisOrigenResponse rpta = new PaisOrigenResponse();
+		Connection cn = null;
 		CallableStatement cs = null;
-		
-		List<PaisOrigen>lista=new ArrayList<PaisOrigen>();
-		
+
+		List<PaisOrigen> lista = new ArrayList<PaisOrigen>();
+
 		try {
-			
-			cn=jdbcTemplate.getDataSource().getConnection();
+
+			cn = jdbcTemplate.getDataSource().getConnection();
 			cn.setAutoCommit(false);
-			cs = cn.prepareCall("{call cmb_llenarPaisOrigen("
-														 + "?,?,?,?,?,"
-														 + "?"
-														 + ")}");
-			
+			cs = cn.prepareCall("{call cmb_llenarPaisOrigen(" + "?,?,?,?,?," + "?" + ")}");
+
 			cs.registerOutParameter(1, Types.VARCHAR);
 			cs.registerOutParameter(2, Types.VARCHAR);
 			cs.registerOutParameter(3, java.sql.Types.REF_CURSOR);
-			
+
 			cs.setInt(4, request.getId_usuario());
 			cs.setString(5, request.getNumeroip());
 			cs.setInt(6, request.getId_pais());
-			
+
 			cs.execute();
-			
-			if(cs.getString(1)!=null){
+
+			if (cs.getString(1) != null) {
 				rpta.setAviso(cs.getString(1));
 			}
-			
-			if(cs.getString(2)!=null){
+
+			if (cs.getString(2) != null) {
 				rpta.setError(cs.getString(2));
-			} else{
-				
+			} else {
+
 				ResultSet rs = (ResultSet) cs.getObject(3);
-				if(rs!=null) {
+				if (rs != null) {
 					while (rs.next()) {
-						PaisOrigen obj=new PaisOrigen();
+						PaisOrigen obj = new PaisOrigen();
 						obj.setId_pais(rs.getInt("id_pais"));
 						obj.setNombre(rs.getString("nombre"));
 						lista.add(obj);
-					}					
+					}
 				}
-			}			
-			rpta.setLista(lista);			
-		}catch (Exception e) {
+			}
+			rpta.setLista(lista);
+		} catch (Exception e) {
 			e.printStackTrace();
-			rpta.setError("Error listaPaisOrigen : "+e.getMessage());
-        } finally {
-            try {
-                if (cn != null) {
-                    cn.close();
-                }
-            } catch (Exception e) {
-            	rpta.setError("Error cerrando conexion listaPaisOrigen : "+e.getMessage());
-            }
-        }
+			rpta.setError("Error listaPaisOrigen : " + e.getMessage());
+		} finally {
+			try {
+				if (cn != null) {
+					cn.close();
+				}
+			} catch (Exception e) {
+				rpta.setError("Error cerrando conexion listaPaisOrigen : " + e.getMessage());
+			}
+		}
 		return rpta;
 	}
 
 	@Override
 	public PaisDestinoResponse listaPaisDestino(PaisDestinoRequest request) {
 		// TODO Auto-generated method stub
-		PaisDestinoResponse rpta= new PaisDestinoResponse();
-		Connection cn= null;	
+		PaisDestinoResponse rpta = new PaisDestinoResponse();
+		Connection cn = null;
 		CallableStatement cs = null;
-		
-		List<PaisDestino>listapais=new ArrayList<PaisDestino>();
-		List<Destino>listadestino=new ArrayList<Destino>();
-		
+
+		List<PaisDestino> listapais = new ArrayList<PaisDestino>();
+		List<Destino> listadestino = new ArrayList<Destino>();
+
 		try {
-			
-			cn=jdbcTemplate.getDataSource().getConnection();
+
+			cn = jdbcTemplate.getDataSource().getConnection();
 			cn.setAutoCommit(false);
-			cs = cn.prepareCall("{call cmb_llenarPaisDestino("
-														 + "?,?,?,?,?,"
-														 + "?,?"
-														 + ")}");
-			
+			cs = cn.prepareCall("{call cmb_llenarPaisDestino(" + "?,?,?,?,?," + "?,?" + ")}");
+
 			cs.registerOutParameter(1, Types.VARCHAR);
 			cs.registerOutParameter(2, Types.VARCHAR);
 			cs.registerOutParameter(3, java.sql.Types.REF_CURSOR);
@@ -1041,154 +1012,142 @@ public class ModuloDaoImpl extends SimpleJdbcDao implements ModuloDAO{
 			cs.setInt(5, request.getId_usuario());
 			cs.setString(6, request.getNumeroip());
 			cs.setInt(7, request.getId_pais());
-			
+
 			cs.execute();
-			
-			if(cs.getString(1)!=null){
+
+			if (cs.getString(1) != null) {
 				rpta.setAviso(cs.getString(1));
 			}
-			
-			if(cs.getString(2)!=null){
+
+			if (cs.getString(2) != null) {
 				rpta.setError(cs.getString(2));
-			} else{
-				
+			} else {
+
 				ResultSet rs = (ResultSet) cs.getObject(3);
-				if(rs!=null) {
+				if (rs != null) {
 					while (rs.next()) {
-						Destino obj=new Destino();
+						Destino obj = new Destino();
 						obj.setId_destino(rs.getInt("id_destino"));
 						obj.setNombre_destino(rs.getString("nombre_destino"));
 						listadestino.add(obj);
-					}					
+					}
 				}
-				
+
 				rs = (ResultSet) cs.getObject(4);
-				if(rs!=null) {
+				if (rs != null) {
 					while (rs.next()) {
-						PaisDestino obj=new PaisDestino();
+						PaisDestino obj = new PaisDestino();
 						obj.setId_pais(rs.getInt("id_pais"));
 						obj.setNombre(rs.getString("nombre"));
 						listapais.add(obj);
-					}					
+					}
 				}
-			}			
+			}
 			rpta.setListadestino(listadestino);
 			rpta.setListapais(listapais);
-			
-		}catch (Exception e) {
+
+		} catch (Exception e) {
 			e.printStackTrace();
-			rpta.setError("Error listaPaisDestino : "+e.getMessage());
-        } finally {
-            try {
-                if (cn != null) {
-                    cn.close();
-                }
-            } catch (Exception e) {
-            	rpta.setError("Error cerrando conexion listaPaisDestino : "+e.getMessage());
-            }
-        }
+			rpta.setError("Error listaPaisDestino : " + e.getMessage());
+		} finally {
+			try {
+				if (cn != null) {
+					cn.close();
+				}
+			} catch (Exception e) {
+				rpta.setError("Error cerrando conexion listaPaisDestino : " + e.getMessage());
+			}
+		}
 		return rpta;
 	}
-	
-	
+
 	@Override
 	public CotizarResponse cotizar(CotizarRequest request) {
-		CotizarResponse rpta= new CotizarResponse();
-		Connection cn= null;	
+		CotizarResponse rpta = new CotizarResponse();
+		Connection cn = null;
 		CallableStatement cs = null;
-		
-		List<PasajeroError> listaErrorEdad=new ArrayList<>();
-		List<PrecioPlanCotizado> lista=new ArrayList<>();
+
+		List<PasajeroError> listaErrorEdad = new ArrayList<>();
+		List<PrecioPlanCotizado> lista = new ArrayList<>();
 		try {
-			cn=jdbcTemplate.getDataSource().getConnection();
+			cn = jdbcTemplate.getDataSource().getConnection();
 			cn.setAutoCommit(false);
-			
-			System.out.println("Dias: "+request.getTcantdias());
-			System.out.println("Cantidad Personas: "+request.getTcantviaj());
-			System.out.println("Id origen: "+request.getTidorigen());
-			System.out.println("Tipo Destino: "+request.getTtipodest());
-			System.out.println("ID Destino: "+request.getTiddestin());
-			for(String cad:request.getTlistpasa()) {
-				System.out.println("Pasajero: "+cad);
-			}
-			
-	        Integer[] edadesArray = {25}; // Debe ser un array de Integer, no int
-	        int idDestino = 4;
-	        String telefono = "123456789";
-	        String email = "cliente@email.com";
-			
-			
-			cs = cn.prepareCall("{ call cotizar_poliza( ?,?,?,?,?,"
-													 + "?,?,?,?,?,"
-													 + "?"
-													 + ")}");
-			
 
-			
-			
-			cs.registerOutParameter(1, Types.VARCHAR);
-			cs.registerOutParameter(2, Types.VARCHAR);
-			cs.registerOutParameter(3, Types.REF_CURSOR);
-			cs.setInt(4, request.getTcantviaj());
-			//cs.setArray(5, cn.createArrayOf("integer", edadesArray));
-			cs.setArray(5, cn.createArrayOf("integer", request.getTlistpasa()));
-			cs.setInt(6, request.getTidorigen());
-			cs.setInt(7, request.getTtipodest());
-			cs.setInt(8, request.getTiddestin());
-			cs.setInt(9, request.getTcantdias());
-			cs.setString(10, telefono);
-			cs.setString(11, email);
-			
-			cs.execute();
-			
-			if(cs.getString(1)!=null){
-				rpta.setAviso(cs.getString(1));
+			System.out.println("Dias: " + request.getTcantdias());
+			System.out.println("Cantidad Personas: " + request.getTcantviaj());
+			System.out.println("Id origen: " + request.getTidorigen());
+			System.out.println("Tipo Destino: " + request.getTtipodest());
+			System.out.println("ID Destino: " + request.getTiddestin());
+			for (String cad : request.getTlistpasa()) {
+				System.out.println("Pasajero: " + cad);
 			}
-			
-			if(cs.getString(2)!=null){
-				rpta.setError(cs.getString(2));
-			} else{
-				
-				ResultSet rs = (ResultSet) cs.getObject(3);
-				if(rs!=null) {
-					while (rs.next()) {
-						PrecioPlanCotizado obj=new PrecioPlanCotizado();
-						obj.setId_plan(rs.getInt("id_plan"));
-						obj.setNombre_plan(rs.getString("nombre_plan"));
-						obj.setPrecio_total(rs.getDouble("precio_total"));
-						obj.setSimbolo_moneda(rs.getString("simbolo_moneda"));
-						obj.setDescripcion_cobertura(rs.getString("descripcion_cobertura"));
-						obj.setImagen(rs.getString("imagen"));
-						obj.setValor_descuento(rs.getDouble("valor_descuento"));
-						obj.setNombre_destino(rs.getString("nombre_destino"));
-						lista.add(obj);
-						
-					}
-					
+
+			Integer[] edadesArray = { 25 }; // Debe ser un array de Integer, no int
+			int idDestino = 4;
+			String telefono = "123456789";
+			String email = "cliente@email.com";
+
+			/*
+			 * cs = cn.prepareCall("{ call cotizar_poliza4( ?,?,?,?,?," + "?,?,?,?,?," +
+			 * "?,?" + ")}");
+			 * 
+			 * cs.registerOutParameter(1, Types.VARCHAR); cs.registerOutParameter(2,
+			 * Types.VARCHAR); cs.registerOutParameter(3, Types.REF_CURSOR); cs.setInt(4,
+			 * request.getTcantviaj()); //cs.setArray(5, cn.createArrayOf("integer",
+			 * edadesArray)); cs.setArray(5, cn.createArrayOf("integer",
+			 * request.getTlistpasa())); cs.setInt(6, request.getTidorigen()); cs.setInt(7,
+			 * request.getTtipodest()); cs.setInt(8, request.getTiddestin()); cs.setInt(9,
+			 * request.getTcantdias()); cs.setString(10, telefono); cs.setString(11, email);
+			 * cs.setBoolean(12, false); cs.execute();
+			 */
+			PreparedStatement ps = cn.prepareStatement("SELECT * FROM cotizar_poliza7(?,?,?,?,?,?,?,?,?,?)");
+
+			ps.setInt(1, request.getTcantviaj());
+			ps.setArray(2, cn.createArrayOf("integer", request.getTlistpasa()));
+			ps.setInt(3, request.getTidorigen());
+			ps.setInt(4, request.getTtipodest());
+			ps.setInt(5, request.getTiddestin());
+			ps.setInt(6, request.getTcantdias());
+			ps.setString(7, telefono);
+			ps.setString(8, email);
+			ps.setBoolean(9, false);
+			ps.setInt(10, 0);
+
+			ResultSet rs = ps.executeQuery();
+
+			if (rs != null) {
+				while (rs.next()) {
+					PrecioPlanCotizado obj = new PrecioPlanCotizado();
+					obj.setId_plan(rs.getInt("id_plan"));
+					obj.setNombre_plan(rs.getString("nombre_plan"));
+					obj.setPrecio_total(rs.getDouble("precio_total"));
+					obj.setSimbolo_moneda(rs.getString("simbolo_moneda"));
+					obj.setDescripcion_cobertura(rs.getString("descripcion_cobertura"));
+					obj.setImagen(rs.getString("imagen"));
+					obj.setValor_descuento(rs.getDouble("valor_descuento"));
+					obj.setNombre_destino(rs.getString("nombre_destino"));
+					lista.add(obj);
 				}
-
 			}
-			
+
+			if (rs != null)
+				rs.close();
+
 			rpta.setLista(lista);
 			rpta.setListaErrorEdad(listaErrorEdad);
-			
-		}catch (Exception e) {
+
+		} catch (Exception e) {
 			e.printStackTrace();
-			rpta.setError("Error cotizar : "+e.getMessage());
-        } finally {
-            try {
-                if (cn != null) {
-                    cn.close();
-                }
-            } catch (Exception e) {
-            	rpta.setError("Error cerrando conexion cotizar : "+e.getMessage());
-            }
-        }
+			rpta.setError("Error cotizar : " + e.getMessage());
+		} finally {
+			try {
+				if (cn != null) {
+					cn.close();
+				}
+			} catch (Exception e) {
+				rpta.setError("Error cerrando conexion cotizar : " + e.getMessage());
+			}
+		}
 		return rpta;
 	}
-
-	
-	
-	
-
 }

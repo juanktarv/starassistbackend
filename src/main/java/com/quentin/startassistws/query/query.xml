@@ -881,9 +881,422 @@ open listapais for select * from t_pais p where p.id_pais != id_pais_origen orde
 end;$$
 
 #############################################################################################
+CREATE OR REPLACE FUNCTION public.cotizar_poliza(
+	OUT aviso character varying,
+	OUT error character varying,
+	OUT lista refcursor,
+	cantidad_viajeros integer,
+	edades integer[],
+	id_pais_origen integer,
+	tipo_destino integer,
+	id_pais_destino integer,
+	cantidad_dias integer,
+	telefono text,
+	email text)
+    RETURNS record
+    LANGUAGE 'plpgsql'
+    COST 100
+    VOLATILE PARALLEL UNSAFE
+AS $BODY$
+DECLARE
+    menor_setenta INT := 0;
+    mayor_setenta INT := 0;
+    tipo_cambio NUMERIC := 0.0;
+	moneda character varying:='';
+    descuento NUMERIC := 0.0;
+    precio_base NUMERIC;
+    precio_final NUMERIC;
+    id_campania INT;
+    id_tipo_cambio_hist INT;
+	destino_plan character varying:='';
+	edad INT;
+BEGIN
+    -- Validaciones
+    IF cantidad_viajeros IS NULL OR cantidad_viajeros <= 0 THEN
+        --RAISE EXCEPTION 'Debe ingresar una cantidad de viajeros válida';
+		error:= 'Debe ingresar una cantidad de viajeros válida';
+		return;
+    END IF;
+
+    IF telefono IS NULL OR telefono = '' THEN
+        --RAISE EXCEPTION 'Debe ingresar el teléfono';
+		error:= 'Debe ingresar el teléfono';
+		return;
+    END IF;
+
+    IF cantidad_dias IS NULL OR cantidad_dias <= 0 THEN
+        --RAISE EXCEPTION 'Debe ingresar la cantidad de días';
+		error:='Debe ingresar la cantidad de días';
+		return;
+    END IF;
+
+    -- Clasificación por edades
+    FOREACH edad IN ARRAY edades LOOP
+        IF edad > 85 THEN
+            --RAISE EXCEPTION 'Los viajeros deben tener una edad menor o igual a 85 años';
+			error:= 'Los viajeros deben tener una edad menor o igual a 85 años';
+			return;
+        END IF;
+
+        IF edad <= 70 THEN
+            menor_setenta := menor_setenta + 1;
+        ELSE
+            mayor_setenta := mayor_setenta + 1;
+        END IF;
+    END LOOP;
+
+    -- Obtener tipo de cambio	
+	select max(simbolo_moneda), max(valor) into moneda, tipo_cambio
+	from t_tipo_cambio where id_pais=id_pais_origen;
+
+	--CALCULAR X TIPO DE DESTINO --- tipo_destino:1 DESTINO , tipo_destino:2 PAIS DESTINO 
+    -- Buscar precios base para el destino
+	if tipo_destino =1 then
+	--
+		--
+		select max(nombre_destino) into  destino_plan from t_destino where id_destino=id_pais_destino;
+		--
+		open lista for 
+		select id_plan, nombre_plan, descripcion_cobertura, round(precio_total *tipo_cambio+0.01 ) as precio_total,
+		moneda as simbolo_moneda, tipo_cambio as tipo_cambio_plan, imagen,
+		60 as valor_descuento, destino_plan as nombre_destino
+		from (
+			select cab.id_plan, cab.nombre_plan, cab.descripcion_cobertura, 
+			calcular_precio_total(cab.id_plan, cantidad_dias, edades) AS precio_total,
+			('https://star-assist.biz/StarAssistWebTest/resources/img/'||cab.imagen_plan_ruta) as imagen
+			from t_plan as cab INNER JOIN t_detalle_plan_destino as det on  cab.id_plan=det.id_plan
+			where det.id_destino=id_pais_destino
+			and cab.tipo_usuario='REGULAR'
+		) as x where x.precio_total > 0 order by x.precio_total asc;
+	--
+	--else tipo_destino = 2 then
+	--
+		--select 1;
+	--
+	end if;
+	/*
+   open lista for SELECT 
+        p.id_precio,
+		p.id_plan as id_plan,
+        pl.nombre_plan,
+        ((p.precio_individual * menor_setenta) +
+        ((p.precio_individual * (p.precio_mayor_setenta / 100)) * mayor_setenta) +
+        (p.precio_individual * mayor_setenta)) * COALESCE(tipo_cambio, 1) AS precio_total,
+         tc.simbolo_moneda
+    FROM t_precios p
+    JOIN t_plan pl ON p.id_plan = pl.id_plan
+    LEFT JOIN t_tipo_cambio tc ON tc.id_pais = id_pais_origen
+    WHERE p.id_plan IN (
+        SELECT id_plan FROM t_detalle_plan_destino WHERE id_destino = id_pais_destino
+    )
+    AND p.duracion >= cantidad_dias
+    ORDER BY precio_total ASC;*/
+	
+END;
+$BODY$;
 
 
+CREATE OR REPLACE FUNCTION public.cotizar_poliza(
+	OUT aviso character varying,
+	OUT error character varying,
+	OUT lista refcursor,
+	cantidad_viajeros integer,
+	edades integer[],
+	id_pais_origen integer,
+	tipo_destino integer,
+	id_pais_destino integer,
+	cantidad_dias integer,
+	telefono text,
+	email text)
+    RETURNS record
+    LANGUAGE 'plpgsql'
+    COST 100
+    VOLATILE PARALLEL UNSAFE
+AS $BODY$
+DECLARE
+    menor_setenta INT := 0;
+    mayor_setenta INT := 0;
+    tipo_cambio NUMERIC := 0.0;
+	moneda character varying:='';
+    descuento NUMERIC := 0.0;
+    precio_base NUMERIC;
+    precio_final NUMERIC;
+    id_campania INT;
+    id_tipo_cambio_hist INT;
+	destino_plan character varying:='';
+	edad INT;
+BEGIN
+    -- Validaciones
+    IF cantidad_viajeros IS NULL OR cantidad_viajeros <= 0 THEN
+        --RAISE EXCEPTION 'Debe ingresar una cantidad de viajeros válida';
+		error:= 'Debe ingresar una cantidad de viajeros válida';
+		return;
+    END IF;
 
+    IF telefono IS NULL OR telefono = '' THEN
+        --RAISE EXCEPTION 'Debe ingresar el teléfono';
+		error:= 'Debe ingresar el teléfono';
+		return;
+    END IF;
+
+    IF cantidad_dias IS NULL OR cantidad_dias <= 0 THEN
+        --RAISE EXCEPTION 'Debe ingresar la cantidad de días';
+		error:='Debe ingresar la cantidad de días';
+		return;
+    END IF;
+
+    -- Clasificación por edades
+    FOREACH edad IN ARRAY edades LOOP
+        IF edad > 85 THEN
+            --RAISE EXCEPTION 'Los viajeros deben tener una edad menor o igual a 85 años';
+			error:= 'Los viajeros deben tener una edad menor o igual a 85 años';
+			return;
+        END IF;
+
+        IF edad <= 70 THEN
+            menor_setenta := menor_setenta + 1;
+        ELSE
+            mayor_setenta := mayor_setenta + 1;
+        END IF;
+    END LOOP;
+
+    -- Obtener tipo de cambio	
+	select max(simbolo_moneda), max(valor) into moneda, tipo_cambio
+	from t_tipo_cambio where id_pais=id_pais_origen;
+
+	--CALCULAR X TIPO DE DESTINO --- tipo_destino:1 DESTINO , tipo_destino:2 PAIS DESTINO 
+    -- Buscar precios base para el destino
+	if tipo_destino =1 then
+	--
+		--
+		select max(nombre_destino) into  destino_plan from t_destino where id_destino=id_pais_destino;
+		--
+		open lista for 
+		select id_plan, nombre_plan, descripcion_cobertura, round(precio_total *tipo_cambio+0.01 ) as precio_total,
+		moneda as simbolo_moneda, tipo_cambio as tipo_cambio_plan, imagen,
+		60 as valor_descuento, destino_plan as nombre_destino
+		from (
+			select cab.id_plan, cab.nombre_plan, cab.descripcion_cobertura, 
+			calcular_precio_total(cab.id_plan, cantidad_dias, edades) AS precio_total,
+			('https://star-assist.biz/StarAssistWebTest/resources/img/'||cab.imagen_plan_ruta) as imagen
+			from t_plan as cab INNER JOIN t_detalle_plan_destino as det on  cab.id_plan=det.id_plan
+			where det.id_destino=id_pais_destino
+			and cab.tipo_usuario='REGULAR'
+		) as x where x.precio_total > 0 order by x.precio_total asc;
+	--
+	--else tipo_destino = 2 then
+	--
+		--select 1;
+	--
+	end if;
+	/*
+   open lista for SELECT 
+        p.id_precio,
+		p.id_plan as id_plan,
+        pl.nombre_plan,
+        ((p.precio_individual * menor_setenta) +
+        ((p.precio_individual * (p.precio_mayor_setenta / 100)) * mayor_setenta) +
+        (p.precio_individual * mayor_setenta)) * COALESCE(tipo_cambio, 1) AS precio_total,
+         tc.simbolo_moneda
+    FROM t_precios p
+    JOIN t_plan pl ON p.id_plan = pl.id_plan
+    LEFT JOIN t_tipo_cambio tc ON tc.id_pais = id_pais_origen
+    WHERE p.id_plan IN (
+        SELECT id_plan FROM t_detalle_plan_destino WHERE id_destino = id_pais_destino
+    )
+    AND p.duracion >= cantidad_dias
+    ORDER BY precio_total ASC;*/
+	
+END;
+$BODY$;
+
+######
+
+-- FUNCTION: public.cotizar_poliza7(integer, integer[], integer, integer, integer, integer, text, text, boolean, integer)
+
+-- DROP FUNCTION IF EXISTS public.cotizar_poliza7(integer, integer[], integer, integer, integer, integer, text, text, boolean, integer);
+
+CREATE OR REPLACE FUNCTION public.cotizar_poliza7(
+	p_cantidad_viajeros integer,
+	p_edades integer[],
+	p_id_pais_origen integer,
+	p_tipo_destino integer,
+	p_id_destino integer,
+	p_cantidad_dias integer,
+	p_telefono text,
+	p_email text,
+	p_multiviaje boolean,
+	p_dias_seguidos_multi integer DEFAULT 0)
+    RETURNS TABLE(id_plan integer, nombre_plan character varying, precio_total numeric, simbolo_moneda character varying, descripcion_cobertura character varying, imagen character varying, valor_descuento numeric, nombre_destino character varying) 
+    LANGUAGE 'plpgsql'
+    COST 100
+    VOLATILE PARALLEL UNSAFE
+    ROWS 1000
+
+AS $BODY$
+DECLARE
+    v_tipo_cambio numeric := 1;
+BEGIN
+
+    -- Obtener tipo de cambio
+    SELECT valor::numeric
+    INTO v_tipo_cambio
+    FROM t_tipo_cambio
+    WHERE id_pais = p_id_pais_origen;
+
+    IF NOT FOUND THEN
+        v_tipo_cambio := 1;
+    END IF;
+
+    RETURN QUERY
+
+    WITH planes_filtrados AS (
+        SELECT 
+            pl.id_plan,
+            pl.nombre_plan,
+            pl.descripcion_cobertura,
+            pl.imagen_plan_ruta
+        FROM t_plan pl
+        WHERE pl.tipo_usuario = 'REGULAR'
+        AND (
+            (p_tipo_destino = 0 AND EXISTS (
+                SELECT 1
+                FROM t_detalle_plan_destino dpd
+                WHERE dpd.id_plan = pl.id_plan
+                  AND dpd.id_destino = p_id_destino
+            ))
+            OR
+            (p_tipo_destino = 1 AND EXISTS (
+                SELECT 1
+                FROM t_plan_paises pp
+                WHERE pp.id_plan = pl.id_plan
+                  AND pp.id_pais = p_id_destino
+            ))
+        )
+    ),
+
+    bloque_base AS (
+
+        -- Precio base (igual que buscarPrecioAnterior en Java)
+        SELECT
+            pr.id_plan,
+            pf.nombre_plan,
+            pf.descripcion_cobertura,
+            pf.imagen_plan_ruta,
+            pr.duracion,
+            pr.precio_individual::numeric,
+            pr.precio_mayor_setenta::numeric,
+
+            -- Buscar siguiente tramo consecutivo (igual que buscarPrecioMayorConsecutivo)
+            (
+                SELECT pr2.duracion
+                FROM t_precios pr2
+                WHERE pr2.id_plan = pr.id_plan
+                  AND pr2.duracion > pr.duracion
+                ORDER BY pr2.duracion ASC
+                LIMIT 1
+            ) AS duracion_siguiente,
+
+            (
+                SELECT pr2.precio_individual::numeric
+                FROM t_precios pr2
+                WHERE pr2.id_plan = pr.id_plan
+                  AND pr2.duracion > pr.duracion
+                ORDER BY pr2.duracion ASC
+                LIMIT 1
+            ) AS precio_siguiente
+
+        FROM t_precios pr
+        JOIN planes_filtrados pf ON pf.id_plan = pr.id_plan
+        WHERE pr.flag_multiviajes IS NULL
+          AND pr.duracion = (
+                SELECT MAX(pr3.duracion)
+                FROM t_precios pr3
+                WHERE pr3.id_plan = pr.id_plan
+                  AND pr3.duracion <= p_cantidad_dias
+          )
+    ),
+
+    calculo_interpolado AS (
+        SELECT
+            bb.*,
+            GREATEST(0, p_cantidad_dias - bb.duracion) AS dias_excedentes,
+
+            -- Interpolación lineal (igual que Java)
+            (
+                bb.precio_individual
+                +
+                COALESCE(
+                    (
+                        (bb.precio_siguiente - bb.precio_individual)
+                        /
+                        NULLIF((bb.duracion_siguiente - bb.duracion)::numeric,0)
+                    ) 
+                    * GREATEST(0, p_cantidad_dias - bb.duracion),
+                    0
+                )
+            ) AS tarifa_base
+        FROM bloque_base bb
+    ),
+
+    calculo_pax AS (
+        SELECT
+            ci.*,
+            COUNT(*) FILTER (WHERE e <= 70) AS menor_70,
+            COUNT(*) FILTER (WHERE e > 70)  AS mayor_70
+        FROM calculo_interpolado ci
+        CROSS JOIN unnest(p_edades) AS e
+        GROUP BY
+            ci.id_plan,
+            ci.nombre_plan,
+            ci.descripcion_cobertura,
+            ci.imagen_plan_ruta,
+            ci.duracion,
+            ci.precio_individual,
+            ci.precio_mayor_setenta,
+            ci.duracion_siguiente,
+            ci.precio_siguiente,
+            ci.dias_excedentes,
+            ci.tarifa_base
+    )
+
+    SELECT
+    cp.id_plan::integer,
+    cp.nombre_plan::varchar,
+
+    ROUND(
+        (
+            (cp.tarifa_base * cp.menor_70)
+            +
+            (cp.tarifa_base * cp.mayor_70)
+            +
+            (
+                cp.tarifa_base
+                * (cp.precio_mayor_setenta / 100)
+                * cp.mayor_70
+            )
+        )
+        * v_tipo_cambio
+    , 2)::numeric AS precio_total,
+
+    '$'::varchar,   -- 🔥 FIX AQUÍ
+
+    cp.descripcion_cobertura::varchar,
+
+    ('https://star-assist.biz/resources/img/' || cp.imagen_plan_ruta)::varchar,  -- 🔥 FIX AQUÍ
+
+    0::numeric,
+
+    p_id_destino::varchar
+
+FROM calculo_pax cp
+ORDER BY precio_total;
+
+END;
+$BODY$;
+
+ALTER FUNCTION public.cotizar_poliza7(integer, integer[], integer, integer, integer, integer, text, text, boolean, integer)
+    OWNER TO doadmin;
 
 
  -->
