@@ -1297,6 +1297,243 @@ $BODY$;
 
 ALTER FUNCTION public.cotizar_poliza7(integer, integer[], integer, integer, integer, integer, text, text, boolean, integer)
     OWNER TO doadmin;
+    
+    
+CREATE OR REPLACE FUNCTION public.cotizar_poliza10(
+    p_cantidad_viajeros integer,
+    p_edades integer[],
+    p_id_pais_origen integer,
+    p_tipo_destino integer,
+    p_id_destino integer,
+    p_cantidad_dias integer,
+    p_telefono text,
+    p_email text,
+    p_multiviaje boolean DEFAULT false,
+    p_dias_seguidos_multi integer DEFAULT 0
+)
+RETURNS TABLE(
+    id_plan integer,
+    nombre_plan varchar,
+    precio_total numeric,
+    s_moneda varchar,
+    descripcion_cobertura varchar,
+    imagen varchar,
+    valor_descuento numeric,
+    nombre_destino varchar
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_tipo_cambio numeric := 1;
+	tipo_cambio NUMERIC := 1;
+	moneda varchar := '';
+	i INT := 1;
+	edad_viajero INT;
+BEGIN
+
+    -------------------------------------------------
+    -- VALIDACIONES GENERALES
+    -------------------------------------------------
+	IF array_length(p_edades,1) IS NULL THEN
+        RAISE EXCEPTION 'Edades requeridas';
+    END IF;
+	
+	IF p_cantidad_viajeros IS NULL OR p_cantidad_viajeros <= 0 THEN
+        RAISE EXCEPTION 'Debe ingresar una cantidad de viajeros válida';
+    END IF;
+
+    IF array_length(p_edades,1) IS DISTINCT FROM p_cantidad_viajeros THEN
+        RAISE EXCEPTION 'La cantidad de edades no coincide con la cantidad de viajeros';
+    END IF;
+
+    IF p_telefono IS NULL OR p_telefono = '' THEN
+        RAISE EXCEPTION 'Debe ingresar el teléfono';
+    END IF;
+
+    IF p_cantidad_dias IS NULL OR p_cantidad_dias <= 0 THEN
+        RAISE EXCEPTION 'Debe ingresar la cantidad de días';
+    END IF;
+
+
+    IF EXISTS (SELECT 1 FROM unnest(p_edades) e WHERE e > 85) THEN
+        RAISE EXCEPTION 'Edad maxima permitida 85';
+    END IF;
+	
+	-------------------------------------------------
+    -- VALIDACIÓN DETALLADA DE EDADES
+    -------------------------------------------------
+	FOREACH edad_viajero IN ARRAY p_edades LOOP
+		IF edad_viajero IS NULL THEN
+			RAISE EXCEPTION 'La edad del viajero % es obligatoria', i;
+		END IF;
+
+		IF edad_viajero <= 0 THEN
+			RAISE EXCEPTION 'La edad del viajero % no es válida', i;
+		END IF;
+
+		IF edad_viajero > 85 THEN
+			RAISE EXCEPTION 
+				'El viajero % tiene % años. La edad máxima permitida es 85 años',
+				i, edad_viajero;
+		END IF;
+
+		i := i + 1;
+	END LOOP;
+
+    -- Cliente potencial
+    INSERT INTO t_cliente_potencial(email,telefono,fecha_registro)
+    VALUES(p_email,p_telefono,now());
+
+    -------------------------------------------------
+    -- TIPO DE CAMBIO (FORZADO A NUMERIC)
+    -------------------------------------------------
+    SELECT max(simbolo_moneda), max(valor)::numeric
+    INTO moneda, tipo_cambio
+    FROM t_tipo_cambio
+    WHERE id_pais = p_id_pais_origen;
+
+    v_tipo_cambio := COALESCE(tipo_cambio, 1);
+
+    RETURN QUERY
+
+    WITH planes_filtrados AS (
+        SELECT pl.*
+        FROM t_plan pl
+        WHERE pl.tipo_usuario='REGULAR'
+        AND (
+            (p_tipo_destino = 1 AND EXISTS(
+                SELECT 1 FROM t_detalle_plan_destino d
+                WHERE d.id_plan = pl.id_plan AND d.id_destino = p_id_destino
+            ))
+            OR
+            (p_tipo_destino = 2 AND EXISTS(
+                SELECT 1 FROM t_plan_paises pp
+                WHERE pp.id_plan = pl.id_plan AND pp.id_pais = p_id_destino
+            ))
+        )
+    ),
+
+    precios_ordenados AS (
+        SELECT pr.*,
+               ROW_NUMBER() OVER (PARTITION BY pr.id_plan ORDER BY pr.duracion) rn
+        FROM t_precios pr
+        JOIN planes_filtrados pf ON pf.id_plan = pr.id_plan
+        WHERE pr.flag_multiviajes IS NULL
+    ),
+
+    tramo AS (
+    SELECT
+        p1.id_plan,
+        p1.precio_individual,
+        p1.precio_mayor_setenta,
+        p1.duracion,
+        p2.duracion AS duracion_siguiente,
+        p2.precio_individual AS precio_siguiente
+    FROM (
+        SELECT DISTINCT ON (id_plan) *
+        FROM precios_ordenados
+        WHERE duracion <= p_cantidad_dias
+        ORDER BY id_plan, duracion DESC
+    ) p1
+    LEFT JOIN LATERAL (
+        SELECT *
+        FROM precios_ordenados p2
+        WHERE p2.id_plan = p1.id_plan
+          AND p2.duracion > p1.duracion
+        ORDER BY p2.duracion ASC
+        LIMIT 1
+    ) p2 ON true
+),
+
+    conteo AS (
+        SELECT
+            COUNT(*) FILTER (WHERE e <= 70) menor_70,
+            COUNT(*) FILTER (WHERE e > 70) mayor_70
+        FROM unnest(p_edades) e
+    )
+
+    SELECT
+        pf.id_plan ::integer,
+        pf.nombre_plan ::varchar,
+
+        redondeo_personalizado(ROUND(
+    (
+        (
+            -- BASE
+            (t.precio_individual * c.menor_70)
+            +
+            (t.precio_individual * c.mayor_70)
+            +
+            (t.precio_individual * (t.precio_mayor_setenta/100) * c.mayor_70)
+
+            -- INTERPOLACIÓN
+            +
+            COALESCE(
+                (
+                    (
+                        (t.precio_siguiente - t.precio_individual)::numeric
+                        / NULLIF((t.duracion_siguiente - t.duracion),0)
+                    )
+                    * GREATEST(0, p_cantidad_dias - t.duracion)
+                ) * c.menor_70
+            ,0)
+
+            +
+            COALESCE(
+                (
+                    (
+                        (t.precio_siguiente - t.precio_individual)::numeric
+                        / NULLIF((t.duracion_siguiente - t.duracion),0)
+                    )
+                    * GREATEST(0, p_cantidad_dias - t.duracion)
+                    * (t.precio_mayor_setenta/100)
+                ) * c.mayor_70
+            ,0)
+        ) * v_tipo_cambio
+    )::numeric
+,2))::numeric AS precio_total,
+
+        moneda as simbolo_moneda,
+
+        pf.descripcion_cobertura ::varchar,
+        ('https://star-assist.biz/resources/img/' || pf.imagen_plan_ruta) ::varchar,
+        0 ::numeric,
+
+        COALESCE(d.nombre_destino,pa.nombre) ::varchar
+
+    FROM tramo t
+    JOIN planes_filtrados pf ON pf.id_plan = t.id_plan
+    CROSS JOIN conteo c
+    LEFT JOIN t_destino d ON (p_tipo_destino=1 AND d.id_destino=p_id_destino)
+    LEFT JOIN t_pais pa ON (p_tipo_destino=2 AND pa.id_pais=p_id_destino)
+
+    ORDER BY 3;
+
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.redondeo_personalizado(p_valor NUMERIC)
+RETURNS INTEGER
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    parte_entera INTEGER;
+    parte_decimal NUMERIC;
+BEGIN
+    -- Parte entera
+    parte_entera := FLOOR(p_valor);
+
+    -- Parte decimal
+    parte_decimal := p_valor - parte_entera;
+
+    -- Regla de redondeo
+    IF parte_decimal >= 0.5 THEN
+        RETURN parte_entera + 1;
+    ELSE
+        RETURN parte_entera;
+    END IF;
+END;
+$$;
 
 
  -->

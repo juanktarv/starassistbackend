@@ -1100,7 +1100,7 @@ public class ModuloDaoImpl extends SimpleJdbcDao implements ModuloDAO {
 			 * request.getTcantdias()); cs.setString(10, telefono); cs.setString(11, email);
 			 * cs.setBoolean(12, false); cs.execute();
 			 */
-			PreparedStatement ps = cn.prepareStatement("SELECT * FROM cotizar_poliza7(?,?,?,?,?,?,?,?,?,?)");
+			PreparedStatement ps = cn.prepareStatement("SELECT * FROM cotizar_poliza10(?,?,?,?,?,?,?,?,?,?)");
 
 			ps.setInt(1, request.getTcantviaj());
 			ps.setArray(2, cn.createArrayOf("integer", request.getTlistpasa()));
@@ -1121,7 +1121,7 @@ public class ModuloDaoImpl extends SimpleJdbcDao implements ModuloDAO {
 					obj.setId_plan(rs.getInt("id_plan"));
 					obj.setNombre_plan(rs.getString("nombre_plan"));
 					obj.setPrecio_total(rs.getDouble("precio_total"));
-					obj.setSimbolo_moneda(rs.getString("simbolo_moneda"));
+					obj.setSimbolo_moneda(rs.getString("s_moneda"));
 					obj.setDescripcion_cobertura(rs.getString("descripcion_cobertura"));
 					obj.setImagen(rs.getString("imagen"));
 					obj.setValor_descuento(rs.getDouble("valor_descuento"));
