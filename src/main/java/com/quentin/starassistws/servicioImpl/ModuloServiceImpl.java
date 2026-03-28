@@ -20,6 +20,8 @@ import com.quentin.starassistws.restcombo.PaisDestinoRequest;
 import com.quentin.starassistws.restcombo.PaisDestinoResponse;
 import com.quentin.starassistws.restcombo.PaisOrigenRequest;
 import com.quentin.starassistws.restcombo.PaisOrigenResponse;
+import com.quentin.starassistws.restcotizar.CrearPolizaRequest;
+import com.quentin.starassistws.restcotizar.CrearPolizaResponse;
 import com.quentin.starassistws.restusuario.CrudUsuarioRequest;
 import com.quentin.starassistws.restusuario.CrudUsuarioResponse;
 import com.quentin.starassistws.restusuario.ListaUsuarioRequest;
@@ -105,6 +107,12 @@ public class ModuloServiceImpl implements ModuloService{
 	public PaisDestinoResponse listaPaisDestino(PaisDestinoRequest request) {
 		// TODO Auto-generated method stub
 		return moduloDAO.listaPaisDestino(request);
+	}
+
+	@Override
+	public CrearPolizaResponse crearPoliza(CrearPolizaRequest request) {
+		// TODO Auto-generated method stub
+		return moduloDAO.crearPoliza(request);
 	}
 	
 

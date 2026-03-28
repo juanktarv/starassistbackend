@@ -18,6 +18,8 @@ import com.quentin.starassistws.restcombo.PaisDestinoRequest;
 import com.quentin.starassistws.restcombo.PaisDestinoResponse;
 import com.quentin.starassistws.restcombo.PaisOrigenRequest;
 import com.quentin.starassistws.restcombo.PaisOrigenResponse;
+import com.quentin.starassistws.restcotizar.CrearPolizaRequest;
+import com.quentin.starassistws.restcotizar.CrearPolizaResponse;
 import com.quentin.starassistws.restusuario.CrudUsuarioRequest;
 import com.quentin.starassistws.restusuario.CrudUsuarioResponse;
 import com.quentin.starassistws.restusuario.ListaUsuarioRequest;
@@ -31,6 +33,7 @@ public interface ModuloService {
 
 
 	CotizarResponse cotizar(CotizarRequest request);
+	CrearPolizaResponse crearPoliza(CrearPolizaRequest request);
 	ValidarUsuarioResponse validarUsuario(ValidarUsuarioRequest request);
 	ListaUsuarioResponse listaUsuarios(ListaUsuarioRequest request);
 	CrudUsuarioResponse crudUsuario(CrudUsuarioRequest request);

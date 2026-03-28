@@ -1535,5 +1535,436 @@ BEGIN
 END;
 $$;
 
+CREATE UNIQUE INDEX IF NOT EXISTS ux_codigo_reserva
+ON t_poliza(codigo_reserva);
+
+
+CREATE OR REPLACE FUNCTION generar_codigo_reserva(p_length integer)
+RETURNS text
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    chars text := 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    result text := '';
+    i integer;
+BEGIN
+    FOR i IN 1..p_length LOOP
+        result := result || substr(chars, floor(random() * length(chars) + 1)::int, 1);
+    END LOOP;
+
+    RETURN result;
+END;
+$$;
+
+ CREATE OR REPLACE FUNCTION public.generar_reserva6(
+    --p_poliza_date_created timestamp,
+    --p_poliza_company_id integer,
+    p_id_pais integer,
+    p_poliza_salida date,
+    p_poliza_regreso date,
+    p_cantidad_dias integer,
+    p_cantidad_viajeros integer,
+	 
+    p_nombre text,
+    p_apellidos text,
+    p_nro_documento text,
+    p_fec_nac date,
+    p_nacionalidad integer,
+	 
+    p_pais_residencia integer,
+    p_email text,
+    p_telefono text,
+    p_pasajeros text,
+    p_id_plan integer,
+	 
+    p_poliza_precio numeric,
+    p_id_destino integer,
+    p_cantidad_dias_seguidos integer,
+    p_nombre_emergencia text,
+    p_apellido_emergencia text,
+	 
+    p_telefono_emergencia text,
+    p_id_precio integer,
+    --p_estado_cobranza_poliza text,
+    p_id_pais_origen integer,
+    --p_pais_plan text,
+    --p_continente_plan text,
+    p_poliza_precio_dolares numeric,
+    --p_tipo_destino integer,
+    p_forma_pago text,
+	 
+    --p_id_campania integer,
+    --p_poliza_precio_agencia numeric,
+    --p_id_historico_campania integer,
+    p_id_tipo_cambio integer,
+	p_pais_destino integer
+)
+RETURNS TABLE(
+    codigo_reserva_generado text,
+    estado_reserva text,
+    estado_pago text,
+	mensaje_reserva text,
+	id_poliza_generado integer
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_id_poliza integer;
+    v_codigo text;
+	v_tipo_destino text;
+	v_estado_cobranza_poliza text;
+	v_id_tipo_cambio_hist integer;
+BEGIN
+
+    -- Generar código único (igual que Java)
+    LOOP
+        v_codigo := generar_codigo_reserva(8);
+
+        EXIT WHEN NOT EXISTS (
+            SELECT 1 
+            FROM t_poliza 
+            WHERE codigo_reserva = v_codigo
+        );
+    END LOOP;
+	
+	-- Calculando datos
+	IF p_pais_destino = 0 THEN
+		v_tipo_destino := 'CONTINENTE';
+	ELSE
+		v_tipo_destino := 'PAIS';
+	END IF;
+	
+	IF p_forma_pago = 'mercado' THEN
+		v_estado_cobranza_poliza := 'PENDIENTE';
+	ELSE
+		v_estado_cobranza_poliza := 'RESERVA';
+	END IF;
+	
+	select max(id_tipo_cambio_hist) into v_id_tipo_cambio_hist 
+	from t_tipo_cambio_hist where id_tipo_cambio = p_id_tipo_cambio;
+
+    -- INSERT usando IDENTITY (NO se incluye id_poliza)
+    INSERT INTO t_poliza (
+        poliza_date_created,
+        --poliza_company_id,
+        id_pais,
+        poliza_salida,
+        poliza_regreso,
+        cantidad_dias,
+        cantidad_viajeros,
+        nombre,
+        apellidos,
+        nro_documento,
+        fec_nac,
+        nacionalidad,
+        pais_residencia,
+        email,
+        telefono,
+        pasajeros,
+        id_plan,
+        poliza_precio,
+        id_destino,
+        cantidad_dias_seguidos,
+        nombre_emergencia,
+        apellido_emergencia,
+        telefono_emergencia,
+        codigo_reserva,
+        id_precio,
+        estado_cobranza_poliza,
+        id_pais_origen,
+        --pais_plan,
+        --continente_plan,
+        poliza_precio_dolares,
+        tipo_destino,
+        forma_pago,
+        --id_campania,
+        --poliza_precio_agencia,
+        --id_historico_campania,
+        id_tipo_cambio,
+		id_tipo_cambio_hist
+    )
+    VALUES (
+        CURRENT_TIMESTAMP,
+        --p_poliza_company_id,
+        p_id_pais,
+        p_poliza_salida,
+        p_poliza_regreso,
+        p_cantidad_dias,
+        p_cantidad_viajeros,
+        p_nombre,
+        p_apellidos,
+        p_nro_documento,
+        p_fec_nac,
+        p_nacionalidad,
+        p_pais_residencia,
+        p_email,
+        p_telefono,
+        p_pasajeros,
+        p_id_plan,
+        p_poliza_precio,
+        p_id_destino,
+        p_cantidad_dias_seguidos,
+        p_nombre_emergencia,
+        p_apellido_emergencia,
+        p_telefono_emergencia,
+        v_codigo,
+        p_id_precio,
+        v_estado_cobranza_poliza,
+        p_id_pais_origen,
+        --p_pais_plan,
+        --p_continente_plan,
+        p_poliza_precio_dolares,
+        v_tipo_destino,
+        p_forma_pago,
+        --p_id_campania,
+        --p_poliza_precio_agencia,
+        --p_id_historico_campania,
+        p_id_tipo_cambio,
+        v_id_tipo_cambio_hist
+    )
+    RETURNING id_poliza INTO v_id_poliza;
+
+    -- Retorno final
+    codigo_reserva_generado := v_codigo;
+    estado_reserva := 'Confirmado';
+    estado_pago := 'Pendiente';
+	mensaje_reserva := '¡ Tu reserva fue realizada de manera exitosa!';
+	id_poliza_generado := v_id_poliza;
+
+    RETURN NEXT;
+
+END;
+$$;
+
+
+CREATE OR REPLACE FUNCTION public.cotizar_poliza13(
+	p_cantidad_viajeros integer,
+	p_edades integer[],
+	p_id_pais_origen integer,
+	p_tipo_destino integer,
+	p_id_destino integer,
+	p_cantidad_dias integer,
+	p_telefono text,
+	p_email text,
+	p_multiviaje boolean DEFAULT false,
+	p_dias_seguidos_multi integer DEFAULT 0)
+    RETURNS TABLE(id_plan integer, 
+				  nombre_plan character varying, 
+				  precio_total numeric, 
+				  precio_total_dolares numeric, 
+				  s_moneda character varying, 
+				  descripcion_cobertura character varying, 
+				  imagen character varying, 
+				  valor_descuento numeric, 
+				  nombre_destino character varying,
+				  val_tipo_cambio numeric,
+				  idtipo_cambio numeric
+				 ) 
+    LANGUAGE 'plpgsql'
+    COST 100
+    VOLATILE PARALLEL UNSAFE
+    ROWS 1000
+
+AS $BODY$
+DECLARE
+    v_tipo_cambio numeric := 1;
+	tipo_cambio NUMERIC := 1;
+	moneda varchar := '';
+	n_id_tipo_cambio NUMERIC := 1;
+	i INT := 1;
+	edad_viajero INT;
+BEGIN
+
+    -------------------------------------------------
+    -- VALIDACIONES GENERALES
+    -------------------------------------------------
+	IF array_length(p_edades,1) IS NULL THEN
+        RAISE EXCEPTION 'Edades requeridas';
+    END IF;
+	
+	IF p_cantidad_viajeros IS NULL OR p_cantidad_viajeros <= 0 THEN
+        RAISE EXCEPTION 'Debe ingresar una cantidad de viajeros válida';
+    END IF;
+
+    IF array_length(p_edades,1) IS DISTINCT FROM p_cantidad_viajeros THEN
+        RAISE EXCEPTION 'La cantidad de edades no coincide con la cantidad de viajeros';
+    END IF;
+
+    IF p_telefono IS NULL OR p_telefono = '' THEN
+        RAISE EXCEPTION 'Debe ingresar el teléfono';
+    END IF;
+
+    IF p_cantidad_dias IS NULL OR p_cantidad_dias <= 0 THEN
+        RAISE EXCEPTION 'Debe ingresar la cantidad de días';
+    END IF;
+
+    IF EXISTS (SELECT 1 FROM unnest(p_edades) e WHERE e > 85) THEN
+        RAISE EXCEPTION 'Edad maxima permitida 85';
+    END IF;
+	
+	-------------------------------------------------
+    -- VALIDACIÓN DETALLADA DE EDADES
+    -------------------------------------------------
+	FOREACH edad_viajero IN ARRAY p_edades LOOP
+		IF edad_viajero IS NULL THEN
+			RAISE EXCEPTION 'La edad del viajero % es obligatoria', i;
+		END IF;
+
+		IF edad_viajero <= 0 THEN
+			RAISE EXCEPTION 'La edad del viajero % no es válida', i;
+		END IF;
+
+		IF edad_viajero > 85 THEN
+			RAISE EXCEPTION 
+				'El viajero % tiene % años. La edad máxima permitida es 85 años',
+				i, edad_viajero;
+		END IF;
+
+		i := i + 1;
+	END LOOP;
+
+    -- Cliente potencial
+    INSERT INTO t_cliente_potencial(email,telefono,fecha_registro)
+    VALUES(p_email,p_telefono,now());
+
+    -------------------------------------------------
+    -- TIPO DE CAMBIO (FORZADO A NUMERIC)
+    -------------------------------------------------
+    SELECT max(simbolo_moneda), max(valor)::numeric, max(id_tipo_cambio)::numeric
+    INTO moneda, tipo_cambio, n_id_tipo_cambio
+    FROM t_tipo_cambio
+    WHERE id_pais = p_id_pais_origen;
+
+    v_tipo_cambio := COALESCE(tipo_cambio, 1);
+
+    RETURN QUERY
+
+    WITH planes_filtrados AS (
+        SELECT pl.*
+        FROM t_plan pl
+        WHERE pl.tipo_usuario='REGULAR'
+        AND (
+            (p_tipo_destino = 1 AND EXISTS(
+                SELECT 1 FROM t_detalle_plan_destino d
+                WHERE d.id_plan = pl.id_plan AND d.id_destino = p_id_destino
+            ))
+            OR
+            (p_tipo_destino = 2 AND EXISTS(
+                SELECT 1 FROM t_plan_paises pp
+                WHERE pp.id_plan = pl.id_plan AND pp.id_pais = p_id_destino
+            ))
+        )
+    ),
+
+    precios_ordenados AS (
+        SELECT pr.*,
+               ROW_NUMBER() OVER (PARTITION BY pr.id_plan ORDER BY pr.duracion) rn
+        FROM t_precios pr
+        JOIN planes_filtrados pf ON pf.id_plan = pr.id_plan
+        WHERE pr.flag_multiviajes IS NULL
+    ),
+
+    tramo AS (
+    SELECT
+        p1.id_plan,
+        p1.precio_individual,
+        p1.precio_mayor_setenta,
+        p1.duracion,
+        p2.duracion AS duracion_siguiente,
+        p2.precio_individual AS precio_siguiente
+    FROM (
+        SELECT DISTINCT ON (id_plan) *
+        FROM precios_ordenados
+        WHERE duracion <= p_cantidad_dias
+        ORDER BY id_plan, duracion DESC
+    ) p1
+    LEFT JOIN LATERAL (
+        SELECT *
+        FROM precios_ordenados p2
+        WHERE p2.id_plan = p1.id_plan
+          AND p2.duracion > p1.duracion
+        ORDER BY p2.duracion ASC
+        LIMIT 1
+    ) p2 ON true
+),
+
+    conteo AS (
+        SELECT
+            COUNT(*) FILTER (WHERE e <= 70) menor_70,
+            COUNT(*) FILTER (WHERE e > 70) mayor_70
+        FROM unnest(p_edades) e
+    )
+   select plan.id_plan, 
+   		  plan.nombre_plan, 
+		  redondeo_personalizado((plan.precio_total* v_tipo_cambio)::numeric)::numeric, 
+		  plan.precio_total as precio_total_dolares,
+		  plan.simbolo_moneda,
+		  plan.descripcion_cobertura,
+		  plan.imagen,
+		  plan.descuento,
+		  plan.destino,
+		  v_tipo_cambio as valor,
+		  n_id_tipo_cambio as idvalor
+		  from (
+    SELECT
+        pf.id_plan ::integer,
+        pf.nombre_plan ::varchar,
+
+        ROUND(
+    (
+        (
+            -- BASE
+            (t.precio_individual * c.menor_70)
+            +
+            (t.precio_individual * c.mayor_70)
+            +
+            (t.precio_individual * (t.precio_mayor_setenta/100) * c.mayor_70)
+
+            -- INTERPOLACIÓN
+            +
+            COALESCE(
+                (
+                    (
+                        (t.precio_siguiente - t.precio_individual)::numeric
+                        / NULLIF((t.duracion_siguiente - t.duracion),0)
+                    )
+                    * GREATEST(0, p_cantidad_dias - t.duracion)
+                ) * c.menor_70
+            ,0)
+
+            +
+            COALESCE(
+                (
+                    (
+                        (t.precio_siguiente - t.precio_individual)::numeric
+                        / NULLIF((t.duracion_siguiente - t.duracion),0)
+                    )
+                    * GREATEST(0, p_cantidad_dias - t.duracion)
+                    * (t.precio_mayor_setenta/100)
+                ) * c.mayor_70
+            ,0)
+        )
+    )::numeric
+,2)::numeric AS precio_total,
+
+        moneda as simbolo_moneda,
+
+        pf.descripcion_cobertura ::varchar,
+        ('https://star-assist.biz/resources/img/' || pf.imagen_plan_ruta) ::varchar as imagen,
+        0 ::numeric as descuento,
+
+        COALESCE(d.nombre_destino,pa.nombre) ::varchar as destino
+
+    FROM tramo t
+    JOIN planes_filtrados pf ON pf.id_plan = t.id_plan
+    CROSS JOIN conteo c
+    LEFT JOIN t_destino d ON (p_tipo_destino=1 AND d.id_destino=p_id_destino)
+    LEFT JOIN t_pais pa ON (p_tipo_destino=2 AND pa.id_pais=p_id_destino)
+
+    ORDER BY 3) as plan;
+
+END;
+$BODY$;
+
 
  -->

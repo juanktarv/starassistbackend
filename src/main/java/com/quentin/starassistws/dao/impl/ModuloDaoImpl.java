@@ -9,6 +9,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -30,6 +31,7 @@ import com.quentin.starassistws.dao.SimpleJdbcDao;
 import com.quentin.starassistws.objetos.CotizarRequest;
 import com.quentin.starassistws.objetos.CotizarResponse;
 import com.quentin.starassistws.objetos.Destino;
+import com.quentin.starassistws.objetos.DetallePasajero;
 import com.quentin.starassistws.objetos.PaisDestino;
 import com.quentin.starassistws.objetos.PaisOrigen;
 import com.quentin.starassistws.objetos.ParametroCorreo;
@@ -48,6 +50,8 @@ import com.quentin.starassistws.restcombo.PaisDestinoRequest;
 import com.quentin.starassistws.restcombo.PaisDestinoResponse;
 import com.quentin.starassistws.restcombo.PaisOrigenRequest;
 import com.quentin.starassistws.restcombo.PaisOrigenResponse;
+import com.quentin.starassistws.restcotizar.CrearPolizaRequest;
+import com.quentin.starassistws.restcotizar.CrearPolizaResponse;
 import com.quentin.starassistws.restusuario.CrudUsuarioRequest;
 import com.quentin.starassistws.restusuario.CrudUsuarioResponse;
 import com.quentin.starassistws.restusuario.ListaUsuarioRequest;
@@ -1100,7 +1104,7 @@ public class ModuloDaoImpl extends SimpleJdbcDao implements ModuloDAO {
 			 * request.getTcantdias()); cs.setString(10, telefono); cs.setString(11, email);
 			 * cs.setBoolean(12, false); cs.execute();
 			 */
-			PreparedStatement ps = cn.prepareStatement("SELECT * FROM cotizar_poliza10(?,?,?,?,?,?,?,?,?,?)");
+			PreparedStatement ps = cn.prepareStatement("SELECT * FROM cotizar_poliza13(?,?,?,?,?,?,?,?,?,?)");
 
 			ps.setInt(1, request.getTcantviaj());
 			ps.setArray(2, cn.createArrayOf("integer", request.getTlistpasa()));
@@ -1121,11 +1125,14 @@ public class ModuloDaoImpl extends SimpleJdbcDao implements ModuloDAO {
 					obj.setId_plan(rs.getInt("id_plan"));
 					obj.setNombre_plan(rs.getString("nombre_plan"));
 					obj.setPrecio_total(rs.getDouble("precio_total"));
+					obj.setPrecio_total_dolares(rs.getDouble("precio_total_dolares"));
 					obj.setSimbolo_moneda(rs.getString("s_moneda"));
 					obj.setDescripcion_cobertura(rs.getString("descripcion_cobertura"));
 					obj.setImagen(rs.getString("imagen"));
 					obj.setValor_descuento(rs.getDouble("valor_descuento"));
 					obj.setNombre_destino(rs.getString("nombre_destino"));
+					obj.setTipo_cambio(rs.getDouble("val_tipo_cambio"));
+					obj.setId_tipo_cambio(rs.getInt("idtipo_cambio"));
 					lista.add(obj);
 				}
 			}
@@ -1149,5 +1156,111 @@ public class ModuloDaoImpl extends SimpleJdbcDao implements ModuloDAO {
 			}
 		}
 		return rpta;
+	}
+
+	@Override
+	public CrearPolizaResponse crearPoliza(CrearPolizaRequest request) {
+	    CrearPolizaResponse rpta = new CrearPolizaResponse();
+	    Connection cn = null;
+	    PreparedStatement ps = null;
+	    ResultSet rs = null;
+
+	    try {
+	        cn = jdbcTemplate.getDataSource().getConnection();
+	        cn.setAutoCommit(false);
+
+	        String sql = "SELECT * FROM generar_reserva6(?,?,?,?,?,"
+	        										 + "?,?,?,?,?,"
+	        										 + "?,?,?,?,?,"
+	        										 + "?,?,?,?,?,"
+	        										 + "?,?,?,?,?,"
+	        										 + "?,?"
+	        										 + ")";
+
+	        ps = cn.prepareStatement(sql);
+	        DetallePasajero principal=request.getDetallePasajero().get(0);
+
+	        int i = 1;
+	        
+	        String datosPasajeros="";
+	        for ( DetallePasajero obj: request.getDetallePasajero()) {
+	        	datosPasajeros += obj.getNombre()+";";
+	        	datosPasajeros += obj.getApellido()+";";
+	        	datosPasajeros += obj.getDocumento()+";";
+	        	datosPasajeros += String.format("%02d/%02d/%04d",
+		                obj.getDia_nacimiento(),
+		                obj.getMes_nacimiento(),
+		                obj.getAnio_nacimiento())+";";
+	        	datosPasajeros += ",";
+	        }
+	        String fechaStr = String.format("%02d/%02d/%04d",
+	                principal.getDia_nacimiento(),
+	                principal.getMes_nacimiento(),
+	                principal.getAnio_nacimiento());
+	        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+	        LocalDate fecha = LocalDate.parse(fechaStr, formatter);
+	        
+	        ps.setInt(i++, request.getOrigenSelec().getId_pais());
+	        ps.setDate(i++, new java.sql.Date(request.getFechaSelec().getFecha_inicio().getTime()));
+	        ps.setDate(i++, new java.sql.Date(request.getFechaSelec().getFecha_fin().getTime()));
+	        ps.setInt(i++, request.getFechaSelec().getDias_cobertura());
+	        ps.setInt(i++, request.getCantidadPersonas());
+	        ps.setString(i++, principal.getNombre());
+	        ps.setString(i++, principal.getApellido());
+	        ps.setString(i++, principal.getDocumento());
+	        ps.setDate(i++, java.sql.Date.valueOf(fecha));
+	        ps.setInt(i++, Integer.parseInt(principal.getNacionalidad()));
+	        ps.setInt(i++, Integer.parseInt(principal.getPais_residencia()));
+	        ps.setString(i++, principal.getCorreo());
+	        ps.setString(i++, principal.getTelefono());
+	        ps.setString(i++, datosPasajeros); // JSON o texto
+	        ps.setInt(i++, request.getPlanSeleccionado().getId_plan());
+	        ps.setBigDecimal(i++, BigDecimal.valueOf(request.getPlanSeleccionado().getPrecio_total()));
+	        ps.setInt(i++, request.getDestinoSelec().getId_destino());
+	        ps.setInt(i++, request.getFechaSelec().getDias_cobertura());
+	        ps.setString(i++, request.getPersonaContacto().getNombre());
+	        ps.setString(i++, request.getPersonaContacto().getApellido());
+	        ps.setString(i++, request.getPersonaContacto().getTelefono());
+	        ps.setInt(i++, request.getPlanSeleccionado().getId_precio()==null?0:request.getPlanSeleccionado().getId_precio());
+	        ps.setInt(i++, request.getOrigenSelec().getId_pais());
+	        ps.setBigDecimal(i++, BigDecimal.valueOf(request.getPlanSeleccionado().getPrecio_total_dolares()));
+	        ps.setString(i++, request.getFormaPago());
+	        ps.setInt(i++, request.getPlanSeleccionado().getId_tipo_cambio());
+	        ps.setInt(i++, request.getDestinoSelec().getId_pais());
+
+	        rs = ps.executeQuery();
+
+	        if (rs != null && rs.next()) {
+	            rpta.setCodigoReserva(rs.getString("codigo_reserva_generado"));
+	            rpta.setEstadoReserva(rs.getString("estado_reserva"));
+	            rpta.setEstadoPago(rs.getString("estado_pago"));
+	            rpta.setMensajeReserva(rs.getString("mensaje_reserva"));
+	            rpta.setIdPoliza(rs.getInt("id_poliza_generado"));
+	            rpta.setCorreoReserva(principal.getCorreo());
+	        }
+
+	        cn.commit();
+
+	    } catch (Exception e) {
+	        try {
+	            if (cn != null) cn.rollback();
+	        } catch (Exception ex) {
+	            ex.printStackTrace();
+	        }
+
+	        e.printStackTrace();
+	        rpta.setError("Error crear poliza: " + e.getMessage());
+
+	    } finally {
+	        try {
+	            if (rs != null) rs.close();
+	            if (ps != null) ps.close();
+	            if (cn != null) cn.close();
+	        } catch (Exception e) {
+	            rpta.setError("Error cerrando conexión: " + e.getMessage());
+	        }
+	    }
+
+	    return rpta;
 	}
 }

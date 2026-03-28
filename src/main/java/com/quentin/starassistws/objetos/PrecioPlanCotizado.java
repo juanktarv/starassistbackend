@@ -6,6 +6,9 @@ public class PrecioPlanCotizado {
 	private Integer id_plan;
 	private String nombre_plan;
 	private Double precio_total;
+	private Double precio_total_dolares;
+	private Double tipo_cambio;
+	private Integer id_tipo_cambio;
 	private String simbolo_moneda;
 	private String descripcion_cobertura;
 	private String imagen;
@@ -66,6 +69,24 @@ public class PrecioPlanCotizado {
 	}
 	public void setNombre_destino(String nombre_destino) {
 		this.nombre_destino = nombre_destino;
+	}
+	public Double getPrecio_total_dolares() {
+		return precio_total_dolares;
+	}
+	public void setPrecio_total_dolares(Double precio_total_dolares) {
+		this.precio_total_dolares = precio_total_dolares;
+	}
+	public Double getTipo_cambio() {
+		return tipo_cambio;
+	}
+	public void setTipo_cambio(Double titpo_cambio) {
+		this.tipo_cambio = titpo_cambio;
+	}
+	public Integer getId_tipo_cambio() {
+		return id_tipo_cambio;
+	}
+	public void setId_tipo_cambio(Integer id_tipo_cambio) {
+		this.id_tipo_cambio = id_tipo_cambio;
 	}
 	
 	

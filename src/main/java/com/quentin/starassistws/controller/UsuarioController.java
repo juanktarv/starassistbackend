@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import com.quentin.starassistws.objetos.CotizarRequest;
 import com.quentin.starassistws.objetos.CotizarResponse;
 import com.quentin.starassistws.restagencia.CrudAgenciaRequest;
+import com.quentin.starassistws.restcotizar.CrearPolizaRequest;
+import com.quentin.starassistws.restcotizar.CrearPolizaResponse;
 import com.quentin.starassistws.restusuario.CrudUsuarioRequest;
 import com.quentin.starassistws.restusuario.CrudUsuarioResponse;
 import com.quentin.starassistws.restusuario.ListaUsuarioRequest;
@@ -35,6 +37,13 @@ public class UsuarioController {
     	//String ipAddress=getClientIp(servletRequest); 	
     	//request.setIpusuario(ipAddress);
     	return moduloService.cotizar(request);
+    }
+    
+    @RequestMapping(value = "poliza/crear",method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    public @ResponseBody CrearPolizaResponse crearPoliza(@RequestBody CrearPolizaRequest request, HttpServletRequest servletRequest){
+    	//String ipAddress=getClientIp(servletRequest); 	
+    	//request.setIpusuario(ipAddress);
+    	return moduloService.crearPoliza(request);
     }
     
     @RequestMapping(value = "validarUsuario",method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
